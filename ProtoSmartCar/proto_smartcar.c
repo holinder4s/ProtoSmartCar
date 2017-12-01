@@ -90,6 +90,7 @@ void _command_stop(void);
 void command_move(int select);
 void USART1_IRQHandler(void);
 void USART2_IRQHandler(void);
+void UIOutline_Init(void);
 
 
 int main(void) {
@@ -111,29 +112,30 @@ int main(void) {
 	Interrupt_Configure();
 
 	ADC_Initialize();
-	LCD_Clear(WHITE);
 
 	/* SHT15 초기화 */
 	SHT15_Init();
 
 	/* 메인 UI틀 초기화 */
-	LCD_ShowString(40, 10, "## ProtoSmartCar ##", BLACK, WHITE);
-	LCD_DrawRectangle(5, 30, 235, 170);
-	LCD_ShowString(20, 55, "[+] Temperature : ", BLACK, WHITE);
-	LCD_ShowString(20, 90, "[+] Humidity    : ", BLACK, WHITE);
-	LCD_ShowString(20, 125, "[+] Velocity    : ", BLACK, WHITE);
+	LCD_Clear(BLACK);
+	UIOutline_Init();
+	//LCD_ShowString(50, 130, "Accident Occur!!!", RED, WHITE);
 
-	LCD_ShowString(50, 180, "- Accident Log -", BLACK, WHITE);
-	LCD_DrawRectangle(5, 200, 235, 315);
+	/* Debug용 : 나중에 삭제할 것! */
+	GPIO_ResetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
 	while (1) {
 		/* 조도센서 값 LCD에 출력
-		 *    1) x < 3000 : 밤(어두움)
+		 *    1) x > 3000 : 밤(어두움)
 		 *    2) else : 낮(밝음) */
 		//LCD_ShowNum(20,40,ADC_result_value_arr[0],10,BLACK,WHITE);
-		if(ADC_result_value_arr[0]<3000)
+		if(ADC_result_value_arr[0] > 3000) {
 			GPIO_SetBits(GPIOD,GPIO_Pin_2);
-		else
+			GPIO_SetBits(GPIOD,GPIO_Pin_3);
+		}
+		else {
 			GPIO_ResetBits(GPIOD,GPIO_Pin_2);
+			GPIO_ResetBits(GPIOD,GPIO_Pin_3);
+		}
 
 		/* 빗물 감지 센서 값 LCD에 출력
 		 *    1) x < 3000 : 강한 빗물
@@ -658,6 +660,18 @@ void change_pwm_servo_duty_cycle(int percentx10) {
 	TIM_OC3Init(TIM3, &PWM_TIM3Ch3_Init);
 }
 
+void UIOutline_Init(void) {
+	LCD_Clear(WHITE);
+	LCD_ShowString(40, 10, "## ProtoSmartCar ##", BLACK, WHITE);
+	LCD_DrawRectangle(5, 30, 235, 170);
+	LCD_ShowString(20, 40, "[+] Temperature : ", BLACK, WHITE);
+	LCD_ShowString(20, 70, "[+] Humidity    : ", BLACK, WHITE);
+	LCD_ShowString(20, 100, "[+] Velocity    : ", BLACK, WHITE);
+
+	LCD_ShowString(50, 180, "- Accident Log -", BLACK, WHITE);
+	LCD_DrawRectangle(5, 200, 235, 315);
+}
+
 /* Todo : 개발자 디버그용이므로 나중에 지울 것 */
 void USART1_IRQHandler(void) {
 	char recv_data;
@@ -691,23 +705,25 @@ void USART2_IRQHandler(void) {
 			if(strstr(command, "CLEAR") != NULL) {
 				GPIO_ResetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
 			}else if(strstr(command, "POWERON") != NULL) {
-				GPIO_SetBits(GPIOD, GPIO_Pin_2);
+				//GPIO_SetBits(GPIOD, GPIO_Pin_2);
+				UIOutline_Init();
 			}else if(strstr(command, "POWEROFF") != NULL) {
-				GPIO_ResetBits(GPIOD, GPIO_Pin_2);
+				//GPIO_ResetBits(GPIOD, GPIO_Pin_2);
+				LCD_Clear(BLACK);
 			}else if(strstr(command, "FORWARD") != NULL) {
-				GPIO_SetBits(GPIOD, GPIO_Pin_3);
+				//GPIO_SetBits(GPIOD, GPIO_Pin_3);
 				command_move(1);
 			}else if(strstr(command, "BACKWARD") != NULL) {
-				GPIO_ResetBits(GPIOD, GPIO_Pin_3);
+				//GPIO_ResetBits(GPIOD, GPIO_Pin_3);
 				command_move(2);
 			}else if(strstr(command, "LEFT") != NULL) {
-				GPIO_SetBits(GPIOD, GPIO_Pin_4);
+				//GPIO_SetBits(GPIOD, GPIO_Pin_4);
 				command_move(3);
 			}else if(strstr(command, "RIGHT") != NULL) {
-				GPIO_SetBits(GPIOD, GPIO_Pin_7);
+				//GPIO_SetBits(GPIOD, GPIO_Pin_7);
 				command_move(4);
 			}else if(strstr(command, "STOP") != NULL) {
-				GPIO_ResetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
+				//GPIO_ResetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
 				command_move(0);
 			}
 			command_pos = 0;
@@ -731,7 +747,13 @@ void USART3_IRQHandler(void) {
 		voice_command = USART_ReceiveData(USART3);
 
 		if(voice_command) {
-			LCD_ShowString(20, 140, voiceBuffer[voice_command-1], BLACK, WHITE);
+			if(voice_command_enable) {
+				UIOutline_Init();
+				LCD_ShowString(50, 130, voiceBuffer[voice_command-1], BLACK, WHITE);
+			}else {
+				UIOutline_Init();
+				LCD_ShowString(50, 130, "Voice Command Disabled!", BLACK, WHITE);
+			}
 			USART_ClearITPendingBit(USART3, USART_IT_RXNE);
 		}
 	}
