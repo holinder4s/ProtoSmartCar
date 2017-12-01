@@ -19,14 +19,15 @@
 #include <SHT15.h>
 
 /* Globl Variables
- *    1) ADC_result_value_arr[2] : [0](조도센서), [1](빗물감지센서)
+ *    1) ADC_result_value_arr[2] : [0](조도센서), [1](빗물감지센서), [2](인체감지센서)
  *    2) command[100] : 명령어 버퍼
  *    3) command_pos : 명령어 위치 초기화 용도
  *    4) voiceBuffer : 보이스 명령어 문자열 셋
  *    5) rain_power_flag : 비의 세기
  *    6) servo_direction : 와이퍼를 주기적으로 왕복시키기 위한 방향 플래그
- *    7) timer_count : 비의 세기에 따라 와이퍼의 속도를 조절하기 위한 timer count */
-__IO uint32_t ADC_result_value_arr[2];
+ *    7) timer_count : 비의 세기에 따라 와이퍼의 속도를 조절하기 위한 timer count
+ *    8) voice_command_enable : 음성 명령 모드 활성화 플래그 */
+__IO uint32_t ADC_result_value_arr[3];
 char command[100];
 int command_pos=0;
 
@@ -59,6 +60,7 @@ u8 *voiceBuffer[] =
 int rain_power_flag = 0;
 int servo_direction = 0;
 int timer_count = 0;
+int voice_command_enable = 0;
 
 
 void RCC_Configure(void);
@@ -114,6 +116,8 @@ int main(void) {
 	/* SHT15 초기화 */
 	SHT15_Init();
 
+	//LCD_ShowString(40, 10, "## ProtoSmartCar ##", BLACK, WHITE);
+	//LCD_DrawRectangle(5, 25, 280, 140);
 	while (1) {
 		/* 조도센서 값 LCD에 출력
 		 *    1) x < 3000 : 밤(어두움)
@@ -142,6 +146,16 @@ int main(void) {
 			GPIO_ResetBits(GPIOD,GPIO_Pin_7);
 		}
 
+		/* 인체 감지 센서 값 LCD에 출력
+		 *    1) x < 2000 : 사람 없음
+		 *    2) x > 2000 : 사람 감지 */
+		LCD_ShowNum(20, 80, ADC_result_value_arr[2], 10, BLACK, WHITE);
+		if(ADC_result_value_arr[2] > 2000) {
+			voice_command_enable = 1;
+		}else {
+			voice_command_enable = 0;
+		}
+
 		/* SHT15 온습도 센서 사용
 		 *    1) 온도 측정 : float형의 temp_val_real에 저장
 		 *    2) 습도 측정 : float형의 humi_val_real에 저장
@@ -154,9 +168,9 @@ int main(void) {
 			SHT15_Calculate(temp_val, humi_val, &temp_val_real, &humi_val_real);	// 실제 온도 및 습도 값 계산
 			dew_point = SHT15_CalcuDewPoint(temp_val_real, humi_val_real);			// 이슬점 온도 계산
 		}
-		LCD_ShowNum(20,80,(int)temp_val_real,10,BLACK,WHITE);
-		LCD_ShowNum(20,100,(int)humi_val_real,10,BLACK,WHITE);
-		LCD_ShowNum(20,120,(int)dew_point,10,BLACK,WHITE);
+		LCD_ShowNum(20,100,(int)temp_val_real,10,BLACK,WHITE);
+		LCD_ShowNum(20,120,(int)humi_val_real,10,BLACK,WHITE);
+		LCD_ShowNum(20,140,(int)dew_point,10,BLACK,WHITE);
 	}
 }
 
@@ -334,10 +348,11 @@ void _GPIO_MOTORInit(void) {
 void _GPIO_ADCInit(void){
 	/* ADC Channel 11 : GPIOC Pin 1
 	 * ADC Channel 12 : GPIOC Pin 2
+	 * ADC Channel 13 : GPIOC Pin 3
 	 * GPIOC mode : Analog Input Mode */
 	GPIO_InitTypeDef GPIOC_ADC_init;
 	GPIOC_ADC_init.GPIO_Mode = GPIO_Mode_AIN;
-	GPIOC_ADC_init.GPIO_Pin = GPIO_Pin_1 | GPIO_Pin_2;
+	GPIOC_ADC_init.GPIO_Pin = GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3;
 	GPIO_Init(GPIOC, &GPIOC_ADC_init);
 }
 
@@ -360,7 +375,7 @@ void GPIO_Configure(void) {
 }
 
 void ADC_Configure(void){
-	/* ADC Channel 11(PC1), 12(PC2) 사용 */
+	/* ADC Channel 11(PC1), 12(PC2), 13(PC3) 사용 */
 	ADC_InitTypeDef ADC_InitStructure;
 	ADC_DeInit(ADC1);
 	ADC_InitStructure.ADC_Mode=ADC_Mode_Independent;
@@ -368,9 +383,10 @@ void ADC_Configure(void){
 	ADC_InitStructure.ADC_ContinuousConvMode=ENABLE;
 	ADC_InitStructure.ADC_ExternalTrigConv=ADC_ExternalTrigConv_None;
 	ADC_InitStructure.ADC_DataAlign=ADC_DataAlign_Right;
-	ADC_InitStructure.ADC_NbrOfChannel=2;
+	ADC_InitStructure.ADC_NbrOfChannel=3;
 	ADC_RegularChannelConfig(ADC1,ADC_Channel_11,1,ADC_SampleTime_239Cycles5);
 	ADC_RegularChannelConfig(ADC1,ADC_Channel_12,2,ADC_SampleTime_239Cycles5);
+	ADC_RegularChannelConfig(ADC1,ADC_Channel_13,3,ADC_SampleTime_239Cycles5);
 	ADC_Init(ADC1,&ADC_InitStructure);
 
 	ADC_DMACmd(ADC1,ENABLE);
@@ -444,7 +460,7 @@ void DMA_Configure(void){
 	DMA_init.DMA_PeripheralBaseAddr=(uint32_t)&ADC1->DR;
 	DMA_init.DMA_MemoryBaseAddr=(uint32_t)ADC_result_value_arr;
 	DMA_init.DMA_DIR=DMA_DIR_PeripheralSRC;
-	DMA_init.DMA_BufferSize=2;
+	DMA_init.DMA_BufferSize=3;
 	DMA_init.DMA_PeripheralInc=DMA_PeripheralInc_Disable;
 	DMA_init.DMA_MemoryInc=DMA_MemoryInc_Enable;
 	DMA_init.DMA_PeripheralDataSize=DMA_PeripheralDataSize_Word;
