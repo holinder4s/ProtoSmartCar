@@ -1,0 +1,175 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:18:1-54:12
+INJECTED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:18:1-54:12
+INJECTED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:18:1-54:12
+MERGED from [com.android.support:appcompat-v7:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/appcompat-v7-26.1.0.aar/20b4b2101c41c45050128541e5f925b9/AndroidManifest.xml:17:1-31:12
+MERGED from [com.android.support:support-v4:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-v4-26.1.0.aar/ba7dd63dbe67f3ec44942078d18d815b/AndroidManifest.xml:17:1-31:12
+MERGED from [com.android.support:gridlayout-v7:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/gridlayout-v7-26.1.0.aar/817feaef35770c7f27681c6461585e10/AndroidManifest.xml:17:1-28:12
+MERGED from [com.android.support:cardview-v7:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/cardview-v7-26.1.0.aar/0fdb180d7eac37a6ce445d999c2b3cb5/AndroidManifest.xml:17:1-28:12
+MERGED from [com.android.support:support-media-compat:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-media-compat-26.1.0.aar/42635ea0e1a7f91a63ec31fd9999ee5e/AndroidManifest.xml:17:1-31:12
+MERGED from [com.android.support:support-fragment:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-fragment-26.1.0.aar/afb9614cfb866f58e63c7f8ed5de50f4/AndroidManifest.xml:17:1-31:12
+MERGED from [com.android.support:support-core-utils:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-core-utils-26.1.0.aar/d4931e9801361ffdcdafcf7c8c651990/AndroidManifest.xml:17:1-31:12
+MERGED from [com.android.support:animated-vector-drawable:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/animated-vector-drawable-26.1.0.aar/041e8eb293560c27c8b55743147601f9/AndroidManifest.xml:17:1-28:12
+MERGED from [com.android.support:support-core-ui:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-core-ui-26.1.0.aar/56aa35e461cb20b129c4cb7e81fcd29e/AndroidManifest.xml:17:1-31:12
+MERGED from [com.android.support:support-vector-drawable:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-vector-drawable-26.1.0.aar/30fd19e720bef422371c86cf283b4dc0/AndroidManifest.xml:17:1-28:12
+MERGED from [com.android.support:support-compat:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-compat-26.1.0.aar/d6aa697bd4a5a774f1937099beab1150/AndroidManifest.xml:17:1-31:12
+MERGED from [android.arch.lifecycle:runtime:1.0.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/runtime-1.0.0.aar/4972e123d96a2e15e9180bde4a018745/AndroidManifest.xml:17:1-30:12
+INJECTED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:18:1-54:12
+INJECTED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:18:1-54:12
+	package
+		ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:19:5-48
+	android:versionName
+		ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:22:5-30
+		INJECTED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml
+		INJECTED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml
+	xmlns:android
+		ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:20:5-63
+	android:versionCode
+		ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:21:5-28
+		INJECTED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml
+		INJECTED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml
+uses-permission#android.permission.BLUETOOTH_ADMIN
+ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:26:5-73
+	android:name
+		ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:26:22-71
+uses-permission#android.permission.BLUETOOTH
+ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:27:5-67
+	android:name
+		ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:27:22-65
+application
+ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:29:5-52:19
+MERGED from [com.android.support:appcompat-v7:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/appcompat-v7-26.1.0.aar/20b4b2101c41c45050128541e5f925b9/AndroidManifest.xml:25:5-29:19
+MERGED from [com.android.support:appcompat-v7:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/appcompat-v7-26.1.0.aar/20b4b2101c41c45050128541e5f925b9/AndroidManifest.xml:25:5-29:19
+MERGED from [com.android.support:support-v4:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-v4-26.1.0.aar/ba7dd63dbe67f3ec44942078d18d815b/AndroidManifest.xml:25:5-29:19
+MERGED from [com.android.support:support-v4:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-v4-26.1.0.aar/ba7dd63dbe67f3ec44942078d18d815b/AndroidManifest.xml:25:5-29:19
+MERGED from [com.android.support:gridlayout-v7:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/gridlayout-v7-26.1.0.aar/817feaef35770c7f27681c6461585e10/AndroidManifest.xml:22:5-26:19
+MERGED from [com.android.support:gridlayout-v7:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/gridlayout-v7-26.1.0.aar/817feaef35770c7f27681c6461585e10/AndroidManifest.xml:22:5-26:19
+MERGED from [com.android.support:cardview-v7:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/cardview-v7-26.1.0.aar/0fdb180d7eac37a6ce445d999c2b3cb5/AndroidManifest.xml:22:5-26:19
+MERGED from [com.android.support:cardview-v7:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/cardview-v7-26.1.0.aar/0fdb180d7eac37a6ce445d999c2b3cb5/AndroidManifest.xml:22:5-26:19
+MERGED from [com.android.support:support-media-compat:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-media-compat-26.1.0.aar/42635ea0e1a7f91a63ec31fd9999ee5e/AndroidManifest.xml:25:5-29:19
+MERGED from [com.android.support:support-media-compat:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-media-compat-26.1.0.aar/42635ea0e1a7f91a63ec31fd9999ee5e/AndroidManifest.xml:25:5-29:19
+MERGED from [com.android.support:support-fragment:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-fragment-26.1.0.aar/afb9614cfb866f58e63c7f8ed5de50f4/AndroidManifest.xml:25:5-29:19
+MERGED from [com.android.support:support-fragment:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-fragment-26.1.0.aar/afb9614cfb866f58e63c7f8ed5de50f4/AndroidManifest.xml:25:5-29:19
+MERGED from [com.android.support:support-core-utils:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-core-utils-26.1.0.aar/d4931e9801361ffdcdafcf7c8c651990/AndroidManifest.xml:25:5-29:19
+MERGED from [com.android.support:support-core-utils:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-core-utils-26.1.0.aar/d4931e9801361ffdcdafcf7c8c651990/AndroidManifest.xml:25:5-29:19
+MERGED from [com.android.support:animated-vector-drawable:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/animated-vector-drawable-26.1.0.aar/041e8eb293560c27c8b55743147601f9/AndroidManifest.xml:22:5-26:19
+MERGED from [com.android.support:animated-vector-drawable:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/animated-vector-drawable-26.1.0.aar/041e8eb293560c27c8b55743147601f9/AndroidManifest.xml:22:5-26:19
+MERGED from [com.android.support:support-core-ui:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-core-ui-26.1.0.aar/56aa35e461cb20b129c4cb7e81fcd29e/AndroidManifest.xml:25:5-29:19
+MERGED from [com.android.support:support-core-ui:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-core-ui-26.1.0.aar/56aa35e461cb20b129c4cb7e81fcd29e/AndroidManifest.xml:25:5-29:19
+MERGED from [com.android.support:support-vector-drawable:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-vector-drawable-26.1.0.aar/30fd19e720bef422371c86cf283b4dc0/AndroidManifest.xml:22:5-26:19
+MERGED from [com.android.support:support-vector-drawable:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-vector-drawable-26.1.0.aar/30fd19e720bef422371c86cf283b4dc0/AndroidManifest.xml:22:5-26:19
+MERGED from [com.android.support:support-compat:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-compat-26.1.0.aar/d6aa697bd4a5a774f1937099beab1150/AndroidManifest.xml:25:5-29:19
+MERGED from [com.android.support:support-compat:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-compat-26.1.0.aar/d6aa697bd4a5a774f1937099beab1150/AndroidManifest.xml:25:5-29:19
+MERGED from [android.arch.lifecycle:runtime:1.0.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/runtime-1.0.0.aar/4972e123d96a2e15e9180bde4a018745/AndroidManifest.xml:24:5-28:19
+MERGED from [android.arch.lifecycle:runtime:1.0.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/runtime-1.0.0.aar/4972e123d96a2e15e9180bde4a018745/AndroidManifest.xml:24:5-28:19
+	android:label
+		ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:32:9-41
+	android:icon
+		ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:31:9-45
+	android:allowBackup
+		ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:30:9-35
+	android:theme
+		ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:33:9-40
+activity#com.example.android.bluetoothchat.MainActivity
+ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:35:9-44:20
+	android:screenOrientation
+		ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:37:13-50
+	android:label
+		ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:39:13-45
+	android:configChanges
+		ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:38:13-63
+	android:name
+		ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:36:13-41
+intent-filter#android.intent.action.MAIN+android.intent.category.LAUNCHER
+ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:40:13-43:29
+action#android.intent.action.MAIN
+ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:41:17-68
+	android:name
+		ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:41:25-66
+category#android.intent.category.LAUNCHER
+ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:42:17-76
+	android:name
+		ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:42:27-74
+activity#com.example.android.bluetoothchat.DeviceListActivity
+ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:46:9-50:63
+	android:label
+		ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:49:13-50
+	android:configChanges
+		ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:48:13-63
+	android:theme
+		ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:50:13-61
+	android:name
+		ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml:47:13-47
+uses-sdk
+INJECTED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml
+INJECTED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml
+MERGED from [com.android.support:appcompat-v7:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/appcompat-v7-26.1.0.aar/20b4b2101c41c45050128541e5f925b9/AndroidManifest.xml:21:5-23:78
+MERGED from [com.android.support:appcompat-v7:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/appcompat-v7-26.1.0.aar/20b4b2101c41c45050128541e5f925b9/AndroidManifest.xml:21:5-23:78
+MERGED from [com.android.support:support-v4:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-v4-26.1.0.aar/ba7dd63dbe67f3ec44942078d18d815b/AndroidManifest.xml:21:5-23:54
+MERGED from [com.android.support:support-v4:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-v4-26.1.0.aar/ba7dd63dbe67f3ec44942078d18d815b/AndroidManifest.xml:21:5-23:54
+MERGED from [com.android.support:gridlayout-v7:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/gridlayout-v7-26.1.0.aar/817feaef35770c7f27681c6461585e10/AndroidManifest.xml:20:5-44
+MERGED from [com.android.support:gridlayout-v7:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/gridlayout-v7-26.1.0.aar/817feaef35770c7f27681c6461585e10/AndroidManifest.xml:20:5-44
+MERGED from [com.android.support:cardview-v7:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/cardview-v7-26.1.0.aar/0fdb180d7eac37a6ce445d999c2b3cb5/AndroidManifest.xml:20:5-44
+MERGED from [com.android.support:cardview-v7:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/cardview-v7-26.1.0.aar/0fdb180d7eac37a6ce445d999c2b3cb5/AndroidManifest.xml:20:5-44
+MERGED from [com.android.support:support-media-compat:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-media-compat-26.1.0.aar/42635ea0e1a7f91a63ec31fd9999ee5e/AndroidManifest.xml:21:5-23:63
+MERGED from [com.android.support:support-media-compat:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-media-compat-26.1.0.aar/42635ea0e1a7f91a63ec31fd9999ee5e/AndroidManifest.xml:21:5-23:63
+MERGED from [com.android.support:support-fragment:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-fragment-26.1.0.aar/afb9614cfb866f58e63c7f8ed5de50f4/AndroidManifest.xml:21:5-23:60
+MERGED from [com.android.support:support-fragment:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-fragment-26.1.0.aar/afb9614cfb866f58e63c7f8ed5de50f4/AndroidManifest.xml:21:5-23:60
+MERGED from [com.android.support:support-core-utils:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-core-utils-26.1.0.aar/d4931e9801361ffdcdafcf7c8c651990/AndroidManifest.xml:21:5-23:61
+MERGED from [com.android.support:support-core-utils:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-core-utils-26.1.0.aar/d4931e9801361ffdcdafcf7c8c651990/AndroidManifest.xml:21:5-23:61
+MERGED from [com.android.support:animated-vector-drawable:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/animated-vector-drawable-26.1.0.aar/041e8eb293560c27c8b55743147601f9/AndroidManifest.xml:20:5-44
+MERGED from [com.android.support:animated-vector-drawable:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/animated-vector-drawable-26.1.0.aar/041e8eb293560c27c8b55743147601f9/AndroidManifest.xml:20:5-44
+MERGED from [com.android.support:support-core-ui:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-core-ui-26.1.0.aar/56aa35e461cb20b129c4cb7e81fcd29e/AndroidManifest.xml:21:5-23:58
+MERGED from [com.android.support:support-core-ui:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-core-ui-26.1.0.aar/56aa35e461cb20b129c4cb7e81fcd29e/AndroidManifest.xml:21:5-23:58
+MERGED from [com.android.support:support-vector-drawable:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-vector-drawable-26.1.0.aar/30fd19e720bef422371c86cf283b4dc0/AndroidManifest.xml:20:5-44
+MERGED from [com.android.support:support-vector-drawable:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-vector-drawable-26.1.0.aar/30fd19e720bef422371c86cf283b4dc0/AndroidManifest.xml:20:5-44
+MERGED from [com.android.support:support-compat:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-compat-26.1.0.aar/d6aa697bd4a5a774f1937099beab1150/AndroidManifest.xml:21:5-23:58
+MERGED from [com.android.support:support-compat:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-compat-26.1.0.aar/d6aa697bd4a5a774f1937099beab1150/AndroidManifest.xml:21:5-23:58
+MERGED from [android.arch.lifecycle:runtime:1.0.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/runtime-1.0.0.aar/4972e123d96a2e15e9180bde4a018745/AndroidManifest.xml:20:5-22:41
+MERGED from [android.arch.lifecycle:runtime:1.0.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/runtime-1.0.0.aar/4972e123d96a2e15e9180bde4a018745/AndroidManifest.xml:20:5-22:41
+INJECTED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml
+INJECTED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml
+	tools:overrideLibrary
+		ADDED from [com.android.support:appcompat-v7:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/appcompat-v7-26.1.0.aar/20b4b2101c41c45050128541e5f925b9/AndroidManifest.xml:23:9-75
+	android:targetSdkVersion
+		INJECTED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml
+		ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml
+		INJECTED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml
+		ADDED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml
+		INJECTED from /Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/src/main/AndroidManifest.xml
+meta-data#android.support.VERSION
+ADDED from [com.android.support:appcompat-v7:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/appcompat-v7-26.1.0.aar/20b4b2101c41c45050128541e5f925b9/AndroidManifest.xml:26:9-28:38
+MERGED from [com.android.support:support-v4:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-v4-26.1.0.aar/ba7dd63dbe67f3ec44942078d18d815b/AndroidManifest.xml:26:9-28:38
+MERGED from [com.android.support:support-v4:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-v4-26.1.0.aar/ba7dd63dbe67f3ec44942078d18d815b/AndroidManifest.xml:26:9-28:38
+MERGED from [com.android.support:gridlayout-v7:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/gridlayout-v7-26.1.0.aar/817feaef35770c7f27681c6461585e10/AndroidManifest.xml:23:9-25:38
+MERGED from [com.android.support:gridlayout-v7:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/gridlayout-v7-26.1.0.aar/817feaef35770c7f27681c6461585e10/AndroidManifest.xml:23:9-25:38
+MERGED from [com.android.support:cardview-v7:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/cardview-v7-26.1.0.aar/0fdb180d7eac37a6ce445d999c2b3cb5/AndroidManifest.xml:23:9-25:38
+MERGED from [com.android.support:cardview-v7:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/cardview-v7-26.1.0.aar/0fdb180d7eac37a6ce445d999c2b3cb5/AndroidManifest.xml:23:9-25:38
+MERGED from [com.android.support:support-media-compat:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-media-compat-26.1.0.aar/42635ea0e1a7f91a63ec31fd9999ee5e/AndroidManifest.xml:26:9-28:38
+MERGED from [com.android.support:support-media-compat:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-media-compat-26.1.0.aar/42635ea0e1a7f91a63ec31fd9999ee5e/AndroidManifest.xml:26:9-28:38
+MERGED from [com.android.support:support-fragment:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-fragment-26.1.0.aar/afb9614cfb866f58e63c7f8ed5de50f4/AndroidManifest.xml:26:9-28:38
+MERGED from [com.android.support:support-fragment:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-fragment-26.1.0.aar/afb9614cfb866f58e63c7f8ed5de50f4/AndroidManifest.xml:26:9-28:38
+MERGED from [com.android.support:support-core-utils:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-core-utils-26.1.0.aar/d4931e9801361ffdcdafcf7c8c651990/AndroidManifest.xml:26:9-28:38
+MERGED from [com.android.support:support-core-utils:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-core-utils-26.1.0.aar/d4931e9801361ffdcdafcf7c8c651990/AndroidManifest.xml:26:9-28:38
+MERGED from [com.android.support:animated-vector-drawable:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/animated-vector-drawable-26.1.0.aar/041e8eb293560c27c8b55743147601f9/AndroidManifest.xml:23:9-25:38
+MERGED from [com.android.support:animated-vector-drawable:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/animated-vector-drawable-26.1.0.aar/041e8eb293560c27c8b55743147601f9/AndroidManifest.xml:23:9-25:38
+MERGED from [com.android.support:support-core-ui:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-core-ui-26.1.0.aar/56aa35e461cb20b129c4cb7e81fcd29e/AndroidManifest.xml:26:9-28:38
+MERGED from [com.android.support:support-core-ui:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-core-ui-26.1.0.aar/56aa35e461cb20b129c4cb7e81fcd29e/AndroidManifest.xml:26:9-28:38
+MERGED from [com.android.support:support-vector-drawable:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-vector-drawable-26.1.0.aar/30fd19e720bef422371c86cf283b4dc0/AndroidManifest.xml:23:9-25:38
+MERGED from [com.android.support:support-vector-drawable:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-vector-drawable-26.1.0.aar/30fd19e720bef422371c86cf283b4dc0/AndroidManifest.xml:23:9-25:38
+MERGED from [com.android.support:support-compat:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-compat-26.1.0.aar/d6aa697bd4a5a774f1937099beab1150/AndroidManifest.xml:26:9-28:38
+MERGED from [com.android.support:support-compat:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/support-compat-26.1.0.aar/d6aa697bd4a5a774f1937099beab1150/AndroidManifest.xml:26:9-28:38
+	android:value
+		ADDED from [com.android.support:appcompat-v7:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/appcompat-v7-26.1.0.aar/20b4b2101c41c45050128541e5f925b9/AndroidManifest.xml:28:13-35
+	android:name
+		ADDED from [com.android.support:appcompat-v7:26.1.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/appcompat-v7-26.1.0.aar/20b4b2101c41c45050128541e5f925b9/AndroidManifest.xml:27:13-51
+meta-data#android.arch.lifecycle.VERSION
+ADDED from [android.arch.lifecycle:runtime:1.0.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/runtime-1.0.0.aar/4972e123d96a2e15e9180bde4a018745/AndroidManifest.xml:25:9-27:47
+	android:value
+		ADDED from [android.arch.lifecycle:runtime:1.0.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/runtime-1.0.0.aar/4972e123d96a2e15e9180bde4a018745/AndroidManifest.xml:27:13-44
+	android:name
+		ADDED from [android.arch.lifecycle:runtime:1.0.0] /Users/holinder4s/.gradle/caches/transforms-1/files-1.1/runtime-1.0.0.aar/4972e123d96a2e15e9180bde4a018745/AndroidManifest.xml:26:13-58

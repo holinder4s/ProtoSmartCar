@@ -1,0 +1,4 @@
+#Wed Nov 29 02:13:48 KST 2017
+base.0=/Users/holinder4s/real_Desktop/17. 4-2학교 수업/하드웨어실험/thu10/week7/발표자료/thu/7주차자료/android-BluetoothChat-master/Application/build/intermediates/transforms/dexMerger/debug/2
+path.0=classes.dex
+renamed.0=classes.dex
