@@ -116,13 +116,20 @@ int main(void) {
 	/* SHT15 초기화 */
 	SHT15_Init();
 
-	//LCD_ShowString(40, 10, "## ProtoSmartCar ##", BLACK, WHITE);
-	//LCD_DrawRectangle(5, 25, 280, 140);
+	/* 메인 UI틀 초기화 */
+	LCD_ShowString(40, 10, "## ProtoSmartCar ##", BLACK, WHITE);
+	LCD_DrawRectangle(5, 30, 235, 170);
+	LCD_ShowString(20, 55, "[+] Temperature : ", BLACK, WHITE);
+	LCD_ShowString(20, 90, "[+] Humidity    : ", BLACK, WHITE);
+	LCD_ShowString(20, 125, "[+] Velocity    : ", BLACK, WHITE);
+
+	LCD_ShowString(50, 180, "- Accident Log -", BLACK, WHITE);
+	LCD_DrawRectangle(5, 200, 235, 315);
 	while (1) {
 		/* 조도센서 값 LCD에 출력
 		 *    1) x < 3000 : 밤(어두움)
 		 *    2) else : 낮(밝음) */
-		LCD_ShowNum(20,40,ADC_result_value_arr[0],10,BLACK,WHITE);
+		//LCD_ShowNum(20,40,ADC_result_value_arr[0],10,BLACK,WHITE);
 		if(ADC_result_value_arr[0]<3000)
 			GPIO_SetBits(GPIOD,GPIO_Pin_2);
 		else
@@ -132,7 +139,7 @@ int main(void) {
 		 *    1) x < 3000 : 강한 빗물
 		 *    2) x < 3500 : 약한 빗물
 		 *    3) else : 빗물 x */
-		LCD_ShowNum(20,60,ADC_result_value_arr[1],10,BLACK,WHITE);
+		//LCD_ShowNum(20,60,ADC_result_value_arr[1],10,BLACK,WHITE);
 		if(ADC_result_value_arr[1]<3000) {
 			rain_power_flag = 2;
 			GPIO_ResetBits(GPIOD,GPIO_Pin_3);
@@ -149,7 +156,7 @@ int main(void) {
 		/* 인체 감지 센서 값 LCD에 출력
 		 *    1) x < 2000 : 사람 없음
 		 *    2) x > 2000 : 사람 감지 */
-		LCD_ShowNum(20, 80, ADC_result_value_arr[2], 10, BLACK, WHITE);
+		//LCD_ShowNum(20, 80, ADC_result_value_arr[2], 10, BLACK, WHITE);
 		if(ADC_result_value_arr[2] > 2000) {
 			voice_command_enable = 1;
 		}else {
@@ -168,9 +175,9 @@ int main(void) {
 			SHT15_Calculate(temp_val, humi_val, &temp_val_real, &humi_val_real);	// 실제 온도 및 습도 값 계산
 			dew_point = SHT15_CalcuDewPoint(temp_val_real, humi_val_real);			// 이슬점 온도 계산
 		}
-		LCD_ShowNum(20,100,(int)temp_val_real,10,BLACK,WHITE);
-		LCD_ShowNum(20,120,(int)humi_val_real,10,BLACK,WHITE);
-		LCD_ShowNum(20,140,(int)dew_point,10,BLACK,WHITE);
+		//LCD_ShowNum(20,100,(int)temp_val_real,10,BLACK,WHITE);
+		//LCD_ShowNum(20,120,(int)humi_val_real,10,BLACK,WHITE);
+		//LCD_ShowNum(20,140,(int)dew_point,10,BLACK,WHITE);
 	}
 }
 
