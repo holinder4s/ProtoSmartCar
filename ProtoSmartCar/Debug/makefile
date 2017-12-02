@@ -24,10 +24,10 @@ RM := clean
 all: ProtoSmartCar.axf
 
 # Tool invocations
-ProtoSmartCar.axf: $(OBJS) C:\Users\hw_8\Documents\DS-5\ Workspace\ProtoSmartCar\ProtoSmartCar\stm32-test.sct $(USER_OBJS) $(LIBS)
+ProtoSmartCar.axf: $(OBJS) D:\ProtoSmartCar\ProtoSmartCar\stm32-test.sct $(USER_OBJS) $(LIBS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: ARM Linker 5'
-	armlink --entry=main --cpu=cortex-m3 --scatter="C:\Users\hw_8\Documents\DS-5 Workspace\ProtoSmartCar\ProtoSmartCar\stm32-test.sct" --info=sizes -o "ProtoSmartCar.axf" $(OBJS) $(USER_OBJS) $(LIBS)
+	armlink --entry=main --cpu=cortex-m3 --scatter="D:\ProtoSmartCar\ProtoSmartCar\stm32-test.sct" --info=sizes -o "ProtoSmartCar.axf" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 

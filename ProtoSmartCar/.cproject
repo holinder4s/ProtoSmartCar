@@ -17,27 +17,27 @@
 							<targetPlatform id="com.arm.eclipse.build.config.baremetal.exe.debug.646859214..849894029" name=""/>
 							<builder buildPath="${workspace_loc:/ProtoSmartCar}/Debug" id="com.arm.toolchain.baremetal.builder.412373450" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="com.arm.toolchain.baremetal.builder"/>
 							<tool id="com.arm.tool.c.compiler.baremetal.exe.debug.1702936454" name="ARM C Compiler 5" superClass="com.arm.tool.c.compiler.baremetal.exe.debug">
-								<option id="com.arm.tool.c.compiler.option.incpath.1584728787" superClass="com.arm.tool.c.compiler.option.incpath" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;C:\Users\hw_8\Documents\DS-5 Workspace\ProtoSmartCar\ProtoSmartCar\Libraries&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;C:\Users\hw_8\Documents\DS-5 Workspace\ProtoSmartCar\ProtoSmartCar\Libraries\CMSIS\CoreSupport&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;C:\Users\hw_8\Documents\DS-5 Workspace\ProtoSmartCar\ProtoSmartCar\Libraries\CMSIS\DeviceSupport&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;C:\Users\hw_8\Documents\DS-5 Workspace\ProtoSmartCar\ProtoSmartCar\Libraries\CMSIS\DeviceSupport\Startup&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;C:\Users\hw_8\Documents\DS-5 Workspace\ProtoSmartCar\ProtoSmartCar\Libraries\STM32F10x_StdPeriph_Driver_v3.5\inc&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;C:\Users\hw_8\Documents\DS-5 Workspace\ProtoSmartCar\ProtoSmartCar\Libraries\STM32F10x_StdPeriph_Driver_v3.5\src&quot;"/>
+								<option id="com.arm.tool.c.compiler.option.incpath.1584728787" name="Include path (-I)" superClass="com.arm.tool.c.compiler.option.incpath" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;D:\ProtoSmartCar\ProtoSmartCar\Libraries&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;D:\ProtoSmartCar\ProtoSmartCar\Libraries\STM32F10x_StdPeriph_Driver_v3.5\inc&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;D:\ProtoSmartCar\ProtoSmartCar\Libraries\STM32F10x_StdPeriph_Driver_v3.5\src&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;D:\ProtoSmartCar\ProtoSmartCar\Libraries\CMSIS\CoreSupport&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;D:\ProtoSmartCar\ProtoSmartCar\Libraries\CMSIS\DeviceSupport&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;D:\ProtoSmartCar\ProtoSmartCar\Libraries\CMSIS\DeviceSupport\Startup&quot;"/>
 								</option>
-								<option id="com.arm.tool.c.compiler.baremetal.exe.debug.option.opt.117771434" superClass="com.arm.tool.c.compiler.baremetal.exe.debug.option.opt" value="com.arm.tool.c.compiler.option.optlevel.restrict" valueType="enumerated"/>
-								<option id="com.arm.tool.c.compiler.option.targetcpu.2041064982" superClass="com.arm.tool.c.compiler.option.targetcpu" value="cortex-m3" valueType="string"/>
+								<option id="com.arm.tool.c.compiler.baremetal.exe.debug.option.opt.117771434" name="Optimization level" superClass="com.arm.tool.c.compiler.baremetal.exe.debug.option.opt" value="com.arm.tool.c.compiler.option.optlevel.restrict" valueType="enumerated"/>
+								<option id="com.arm.tool.c.compiler.option.targetcpu.2041064982" name="Target CPU (--cpu)" superClass="com.arm.tool.c.compiler.option.targetcpu" value="cortex-m3" valueType="string"/>
 								<inputType id="com.arm.tool.c.compiler.input.2049510340" superClass="com.arm.tool.c.compiler.input"/>
 								<inputType id="com.arm.tool.cpp.compiler.input.394372636" superClass="com.arm.tool.cpp.compiler.input"/>
 							</tool>
 							<tool id="com.arm.tool.cpp.compiler.baremetal.exe.debug.1044733874" name="ARM C++ Compiler 5" superClass="com.arm.tool.cpp.compiler.baremetal.exe.debug"/>
 							<tool id="com.arm.tool.assembler.1668362657" name="ARM Assembler 5" superClass="com.arm.tool.assembler">
-								<option id="com.arm.tool.assembler.option.cpu.1367695689" superClass="com.arm.tool.assembler.option.cpu" value="cortex-m3" valueType="string"/>
+								<option id="com.arm.tool.assembler.option.cpu.1367695689" name="Target CPU (--cpu)" superClass="com.arm.tool.assembler.option.cpu" value="cortex-m3" valueType="string"/>
 							</tool>
 							<tool id="com.arm.tool.c.linker.1477860755" name="ARM Linker 5" superClass="com.arm.tool.c.linker">
-								<option id="com.arm.tool.c.linker.option.scatter.497029571" superClass="com.arm.tool.c.linker.option.scatter" value="C:\Users\hw_8\Documents\DS-5 Workspace\ProtoSmartCar\ProtoSmartCar\stm32-test.sct" valueType="string"/>
-								<option id="com.arm.tool.c.linker.option.entry.625854598" superClass="com.arm.tool.c.linker.option.entry" value="main" valueType="string"/>
-								<option id="com.arm.tool.c.linker.option.cpu.2091528266" superClass="com.arm.tool.c.linker.option.cpu" value="cortex-m3" valueType="string"/>
+								<option id="com.arm.tool.c.linker.option.scatter.497029571" name="Scatter file (--scatter)" superClass="com.arm.tool.c.linker.option.scatter" value="D:\ProtoSmartCar\ProtoSmartCar\stm32-test.sct" valueType="string"/>
+								<option id="com.arm.tool.c.linker.option.entry.625854598" name="Image entry point (--entry)" superClass="com.arm.tool.c.linker.option.entry" value="main" valueType="string"/>
+								<option id="com.arm.tool.c.linker.option.cpu.2091528266" name="Target CPU (--cpu)" superClass="com.arm.tool.c.linker.option.cpu" value="cortex-m3" valueType="string"/>
 							</tool>
 							<tool id="com.arm.tool.librarian.1912400717" name="ARM Librarian 5" superClass="com.arm.tool.librarian"/>
 						</toolChain>
@@ -83,4 +83,5 @@
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
+	<storageModule moduleId="refreshScope"/>
 </cproject>
