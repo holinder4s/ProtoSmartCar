@@ -4,11 +4,13 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
+../Libraries/MPU6050.c \
 ../Libraries/SHT15.c \
 ../Libraries/Touch.c \
 ../Libraries/lcd.c 
 
 OBJS += \
+./Libraries/MPU6050.o \
 ./Libraries/SHT15.o \
 ./Libraries/Touch.o \
 ./Libraries/lcd.o 

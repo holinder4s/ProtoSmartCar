@@ -17,6 +17,8 @@
 #include <lcd.h>
 #include <Touch.h>
 #include <SHT15.h>
+#include <MPU6050.h>
+#include <stdbool.h>
 
 /* Globl Variables
  *    1) ADC_result_value_arr[2] : [0](조도센서), [1](빗물감지센서), [2](인체감지센서)
@@ -61,6 +63,9 @@ int rain_power_flag = 0;
 int servo_direction = 0;
 int timer_count = 0;
 int voice_command_enable = 0;
+
+/* wjdebug : 가속도 센서 테스트 */
+int16_t  AccelGyro[6]={0};
 
 
 void RCC_Configure(void);
@@ -109,12 +114,16 @@ int main(void) {
 	ADC_Configure();
 	TIM_PWM_Configure();
 	DMA_Configure();
+	MPU6050_I2C_Init();			// MPU6050을 사용하기 위한 I2C 설정
 	Interrupt_Configure();
 
 	ADC_Initialize();
 
 	/* SHT15 초기화 */
 	SHT15_Init();
+
+	/* I2C를 이용한 MPU6050 초기화 */
+	MPU6050_Initialize();
 
 	/* 메인 UI틀 초기화 */
 	LCD_Clear(BLACK);
@@ -123,6 +132,7 @@ int main(void) {
 
 	/* Debug용 : 나중에 삭제할 것! */
 	GPIO_ResetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
+
 	while (1) {
 		/* 조도센서 값 LCD에 출력
 		 *    1) x > 3000 : 밤(어두움)
@@ -180,6 +190,20 @@ int main(void) {
 		//LCD_ShowNum(20,100,(int)temp_val_real,10,BLACK,WHITE);
 		//LCD_ShowNum(20,120,(int)humi_val_real,10,BLACK,WHITE);
 		//LCD_ShowNum(20,140,(int)dew_point,10,BLACK,WHITE);
+
+		/* MPU6050 6축 자이로 가속도 센서 사용
+		 *    1)
+		 *    2)
+		 *    3) */
+		if (MPU6050_TestConnection() != 0) {
+			MPU6050_GetRawAccelGyro(AccelGyro);
+			LCD_ShowNum(20,20,(int)AccelGyro[0],10,BLACK,WHITE);
+			LCD_ShowNum(20,40,(int)AccelGyro[1],10,BLACK,WHITE);
+			LCD_ShowNum(20,60,(int)AccelGyro[2],10,BLACK,WHITE);
+			LCD_ShowNum(20,80,(int)AccelGyro[3],10,BLACK,WHITE);
+			LCD_ShowNum(20,100,(int)AccelGyro[4],10,BLACK,WHITE);
+			LCD_ShowNum(20,120,(int)AccelGyro[5],10,BLACK,WHITE);
+		}
 	}
 }
 
@@ -714,7 +738,7 @@ void USART2_IRQHandler(void) {
 				//GPIO_SetBits(GPIOD, GPIO_Pin_3);
 				command_move(1);
 			}else if(strstr(command, "BACKWARD") != NULL) {
-				//GPIO_ResetBits(GPIOD, GPIO_Pin_3);
+				//GPIO_SetBits(GPIOD, GPIO_Pin_4);
 				command_move(2);
 			}else if(strstr(command, "LEFT") != NULL) {
 				//GPIO_SetBits(GPIOD, GPIO_Pin_4);
@@ -723,7 +747,7 @@ void USART2_IRQHandler(void) {
 				//GPIO_SetBits(GPIOD, GPIO_Pin_7);
 				command_move(4);
 			}else if(strstr(command, "STOP") != NULL) {
-				//GPIO_ResetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
+				GPIO_ResetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
 				command_move(0);
 			}
 			command_pos = 0;
