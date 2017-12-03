@@ -19,6 +19,8 @@
 #include <SHT15.h>
 #include <MPU6050.h>
 #include <stdbool.h>
+#include <math.h>
+//#include <Tick.h>
 
 /* Globl Variables
  *    1) ADC_result_value_arr[2] : [0](조도센서), [1](빗물감지센서), [2](인체감지센서)
@@ -28,36 +30,19 @@
  *    5) rain_power_flag : 비의 세기
  *    6) servo_direction : 와이퍼를 주기적으로 왕복시키기 위한 방향 플래그
  *    7) timer_count : 비의 세기에 따라 와이퍼의 속도를 조절하기 위한 timer count
- *    8) voice_command_enable : 음성 명령 모드 활성화 플래그 */
+ *    8) voice_command_enable : 음성 명령 모드 활성화 플래그
+ *    9) AccelGyro[6] : 가속도 센서 Raw 데이터
+ *    10) AccelGyroAverage_flag : true이면 average계산 모드(초기화), false이면 정상 동작
+ *    11) base_???_? : 가속도 센서 Raw 데이터 평균 값
+ *    12) last_???_??? : 최신 가속도 센서 가공 값
+ *    13) g_currentTick : TickCount값 => 시간 계산을 위해 이용(1msec)*/
 __IO uint32_t ADC_result_value_arr[3];
 char command[100];
 int command_pos=0;
 
-u8 *voiceBuffer[] =
-{
-    "Turn on the light",
-    "Turn off the light",
-    "Play music",
-    "Pause",
-    "Next",
-    "Previous",
-    "Up",
-    "Down",
-    "Turn on the TV",
-    "Turn off the TV",
-    "Increase temperature",
-    "Decrease temperature",
-    "What's the time",
-    "Open the door",
-    "Close the door",
-    "Left",
-    "Right",
-    "Stop",
-    "Start",
-    "Mode 1",
-    "Mode 2",
-    "Go",
-};
+u8 *voiceBuffer[] = {"Turn on the light", "Turn off the light", "Play music", "Pause", "Next", "Previous",
+		"Up", "Down", "Turn on the TV", "Turn off the TV", "Increase temperature", "Decrease temperature",
+		"What's the time", "Open the door", "Close the door", "Left", "Right", "Stop", "Start", "Mode 1", "Mode 2", "Go",};
 
 int rain_power_flag = 0;
 int servo_direction = 0;
@@ -66,7 +51,15 @@ int voice_command_enable = 0;
 
 /* wjdebug : 가속도 센서 테스트 */
 int16_t  AccelGyro[6]={0};
+bool AccelGyroAverage_flag = true;
+uint16_t base_accel_x=0, base_accel_y=0, base_accel_z=0;
+uint16_t base_gyro_x=0, base_gyro_y=0, base_gyro_z=0;
+unsigned long last_read_time;
+float last_angle_x, last_angle_y, last_angle_z;
+float last_gyro_angle_x, last_gyro_angle_y, last_gyro_angle_z;
 
+/* 현재 Tick Count값을 저장하는 전역변수 */
+uint32_t g_currentTick = 0;
 
 void RCC_Configure(void);
 void USART_Configure(void);
@@ -93,6 +86,12 @@ void _command_left(void);
 void _command_right(void);
 void _command_stop(void);
 void command_move(int select);
+void change_pwm_servo_duty_cycle(int percentx10);
+void AccelGyroInitialize(void);
+void calculate_accelgyro_average(int total_readnum);
+void set_last_read_angle_data(unsigned long time, float x, float y, float z, float gyro_x, float gyro_y, float gyro_z);
+void PrintAccelGryroRaw2Angle(int16_t accelgyro[6]);
+uint32_t GetTickCount(void);
 void USART1_IRQHandler(void);
 void USART2_IRQHandler(void);
 void UIOutline_Init(void);
@@ -192,17 +191,18 @@ int main(void) {
 		//LCD_ShowNum(20,140,(int)dew_point,10,BLACK,WHITE);
 
 		/* MPU6050 6축 자이로 가속도 센서 사용
-		 *    1)
-		 *    2)
-		 *    3) */
+		 *    1) 경사 측정 : raw sensor데이터를 받아 각도 계산  */
 		if (MPU6050_TestConnection() != 0) {
-			MPU6050_GetRawAccelGyro(AccelGyro);
-			LCD_ShowNum(20,20,(int)AccelGyro[0],10,BLACK,WHITE);
-			LCD_ShowNum(20,40,(int)AccelGyro[1],10,BLACK,WHITE);
-			LCD_ShowNum(20,60,(int)AccelGyro[2],10,BLACK,WHITE);
-			LCD_ShowNum(20,80,(int)AccelGyro[3],10,BLACK,WHITE);
-			LCD_ShowNum(20,100,(int)AccelGyro[4],10,BLACK,WHITE);
-			LCD_ShowNum(20,120,(int)AccelGyro[5],10,BLACK,WHITE);
+			if(AccelGyroAverage_flag == true) {
+				AccelGyroInitialize();
+				calculate_accelgyro_average(10);
+				AccelGyroAverage_flag = false;
+			}else {
+				/* Sensor로부터 데이터 받아오기 */
+				MPU6050_GetRawAccelGyro(AccelGyro);
+				/* 센서 raw데이터를 각도로 가공 및 출력 */
+				PrintAccelGryroRaw2Angle(AccelGyro);
+			}
 		}
 	}
 }
@@ -235,6 +235,9 @@ void RCC_Configure(void) {
 
 	/* 와이퍼 작동시 주기 설정을 위한 TIM2 사용 */
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
+
+	/* 가속도 GetTickCount()역할을 하는 함수를 위한 TIM1(1msec주기) 클럭 인가 */
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1, ENABLE);
 }
 
 void USART_Configure(void) {
@@ -480,9 +483,27 @@ void _TIM2_Configure(void) {
 	TIM_Cmd(TIM2, ENABLE);
 }
 
+void _TIM1_Configure(void) {
+	/* 기본 System Clock : 72MHz
+	 * Prescale = 72MHz / 100KHz - 1 = 719 => 72MHz를 100KHz Timer clock으로 세팅
+	 * TIM_Period = 100KHz / 1KHz - 1 = 99 => 100KHz Timer clock을 100주기를 통해 1KHz(1msec) 주기로 세팅 */
+	TIM_TimeBaseInitTypeDef TIM1_Init;
+
+	TIM1_Init.TIM_Prescaler = (uint16_t)(SystemCoreClock / 100000) - 1;
+	TIM1_Init.TIM_Period = 100 - 1;
+	TIM1_Init.TIM_ClockDivision = 0;
+	TIM1_Init.TIM_CounterMode = TIM_CounterMode_Up;
+	TIM_TimeBaseInit(TIM1, &TIM1_Init);
+
+	/* TIM2 Interrupt Enable */
+	TIM_ITConfig(TIM1, TIM_IT_Update, ENABLE);
+	TIM_Cmd(TIM1, ENABLE);
+}
+
 void TIM_PWM_Configure(void){
 	_TIM3Ch3_PWM_Configure();
 	_TIM2_Configure();
+	_TIM1_Configure();
 }
 
 void DMA_Configure(void){
@@ -684,6 +705,112 @@ void change_pwm_servo_duty_cycle(int percentx10) {
 	TIM_OC3Init(TIM3, &PWM_TIM3Ch3_Init);
 }
 
+void AccelGyroInitialize(void) {
+	set_last_read_angle_data(GetTickCount(), 0, 0, 0, 0, 0, 0);
+}
+
+void calculate_accelgyro_average(int total_readnum) {
+	int i=0;
+	for(i=0; i<total_readnum; i++) {
+		MPU6050_GetRawAccelGyro(AccelGyro);
+		base_accel_x += AccelGyro[0];
+		base_accel_y += AccelGyro[1];
+		base_accel_z += AccelGyro[2];
+		base_gyro_x += AccelGyro[3];
+		base_gyro_y += AccelGyro[4];
+		base_gyro_z += AccelGyro[5];
+	}
+	base_accel_x /= total_readnum;
+	base_accel_y /= total_readnum;
+	base_accel_z /= total_readnum;
+	base_gyro_x /= total_readnum;
+	base_gyro_y /= total_readnum;
+	base_gyro_z /= total_readnum;
+}
+
+void set_last_read_angle_data(unsigned long time, float x, float y, float z, float gyro_x, float gyro_y, float gyro_z) {
+	/* 가속도 센서 값을 활용해 처리한 최종 각도 값을 전역 변수에 저장 */
+	last_read_time = time;
+	last_angle_x = x;
+	last_angle_y = y;
+	last_angle_z = z;
+	last_gyro_angle_x = gyro_x;
+	last_gyro_angle_y = gyro_y;
+	last_gyro_angle_z = gyro_z;
+}
+
+void PrintAccelGryroRaw2Angle(int16_t accelgyro[6]) {
+	/* 250 degree/s 범위를 가지고, 이 값을 16bit 분해능으로 표현하고 있으므로,
+	 * mpu-6050에서 보내는 값은 -32766 ~ +32766 값이다.
+	 * 그러므로 이 값을 실제 250 degree/s로 변환하려면 131로 나눠줘야 한다.
+	 * 범위가 다르면 이 값도 바뀌어야 한다. */
+
+	float FS_SEL = 131;
+
+	/* 회전을 했을 떄 시간 알기 */
+	unsigned long t_now = GetTickCount();
+
+	float gyro_x = (accelgyro[3] - base_gyro_x)/FS_SEL;
+	float gyro_y = (accelgyro[4] - base_gyro_y)/FS_SEL;
+	float gyro_z = (accelgyro[5] - base_gyro_z)/FS_SEL;
+
+
+	/* 가속도 값 범위는 16bit이기 때문에 -32766 ~ + 32766 범위이고,
+	 * +-2g 범위이면 mpu-6050으로부터 넘어온 값을 실제 g단위로 환산하려면
+	 * scale factor(16384)로 나눠야 한다. +-2g 범위는 +-32766값이다. 즉 32766갑이면 2가 된다. */
+
+	//acceleration 원시 데이터 저장
+	float accel_x = accelgyro[0];
+	float accel_y = accelgyro[1];
+	float accel_z = accelgyro[2];
+
+
+	//accelerometer로 부터 각도 얻기
+	float RADIANS_TO_DEGREES = 180/3.14159;
+
+	// float accel_vector_length = sqrt(pow(accel_x,2) + pow(accel_y,2) + pow(accel_z,2));
+	float accel_angle_y = atan(-1*accel_x/sqrt(pow(accel_y,2) + pow(accel_z,2)))*RADIANS_TO_DEGREES;
+	float accel_angle_x = atan(accel_y/sqrt(pow(accel_x,2) + pow(accel_z,2)))*RADIANS_TO_DEGREES;
+	float accel_angle_z = 0;
+
+
+	//gyro angles 계산1
+	float dt =(t_now - last_read_time)/1000.0;
+	float gyro_angle_x = gyro_x*dt + last_angle_x;
+	float gyro_angle_y = gyro_y*dt + last_angle_y;
+	float gyro_angle_z = gyro_z*dt + last_angle_z;
+
+	//gyro angles 계산2
+	float unfiltered_gyro_angle_x = gyro_x*dt + last_gyro_angle_x;
+	float unfiltered_gyro_angle_y = gyro_y*dt + last_gyro_angle_y;
+	float unfiltered_gyro_angle_z = gyro_z*dt + last_gyro_angle_z;
+
+	//알파를 이용해서 최종 각도 계산3
+	float alpha = 0.96;
+	float angle_x = alpha*gyro_angle_x + (1.0 - alpha)*accel_angle_x;
+	float angle_y = alpha*gyro_angle_y + (1.0 - alpha)*accel_angle_y;
+	float angle_z = gyro_angle_z;  //Accelerometer는 z-angle 없음
+
+
+	//최종 각도 저장
+	set_last_read_angle_data(t_now, angle_x, angle_y, angle_z, unfiltered_gyro_angle_x, unfiltered_gyro_angle_y, unfiltered_gyro_angle_z);
+
+	// 2 바이트 정수로 보내기 위해 100을 곱하고, 받을 때, 100을 나눠준다.
+	//LCD_ShowNum(20,20, (int)accel_angle_x*100,10,BLACK,WHITE);
+	//LCD_ShowNum(20,40, (int)accel_angle_y*100,10,BLACK,WHITE);
+	//LCD_ShowNum(20,60,(int)accel_angle_z*100,10,BLACK,WHITE);
+	//LCD_ShowNum(20,80,(int)unfiltered_gyro_angle_x*100,10,BLACK,WHITE);
+	//LCD_ShowNum(20,100,(int)unfiltered_gyro_angle_y*100,10,BLACK,WHITE);
+	//LCD_ShowNum(20,120,(int)unfiltered_gyro_angle_z*100,10,BLACK,WHITE);
+	LCD_ShowNum(20,140,(int)angle_x,10,BLACK,WHITE);		// 실질적으로 필요한 경사 각도
+	//LCD_ShowNum(20,160,(int)angle_y,10,BLACK,WHITE);
+	//LCD_ShowNum(20,180,(int)angle_z,10,BLACK,WHITE);
+}
+
+uint32_t GetTickCount(void) {
+	return g_currentTick;
+}
+
 void UIOutline_Init(void) {
 	LCD_Clear(WHITE);
 	LCD_ShowString(40, 10, "## ProtoSmartCar ##", BLACK, WHITE);
@@ -818,5 +945,13 @@ void TIM2_IRQHandler(void) {
 			}
 		}
 		TIM_ClearITPendingBit(TIM2, TIM_IT_Update);		// clear interrupt flag
+	}
+}
+
+void TIM1_IRQHandler(void) {
+	if(TIM_GetITStatus(TIM1, TIM_IT_Update) != RESET) {
+		/* TickCount 값을 1씩 증가시키면서 g_currentTick에 저장 */
+		g_currentTick++;
+		TIM_ClearITPendingBit(TIM1, TIM_IT_Update);		// clear interrupt flag
 	}
 }
