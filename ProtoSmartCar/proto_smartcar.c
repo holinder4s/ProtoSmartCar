@@ -136,8 +136,8 @@ int main(void) {
 	MPU6050_Initialize();
 
 	/* 메인 UI틀 초기화 */
-	LCD_Clear(BLACK);
-	UIOutline_Init();
+	LCD_Clear(WHITE);
+	//UIOutline_Init();
 	//LCD_ShowString(50, 130, "Accident Occur!!!", RED, WHITE);
 
 	/* Debug용 : 나중에 삭제할 것! */
@@ -147,7 +147,7 @@ int main(void) {
 		/* 조도센서 값 LCD에 출력
 		 *    1) x > 3000 : 밤(어두움)
 		 *    2) else : 낮(밝음) */
-		//LCD_ShowNum(20,40,ADC_result_value_arr[0],10,BLACK,WHITE);
+		LCD_ShowNum(190,225,ADC_result_value_arr[0],4,BLACK,WHITE);
 		if(ADC_result_value_arr[0] > 3000) {
 			GPIO_SetBits(GPIOD,GPIO_Pin_2);
 			GPIO_SetBits(GPIOD,GPIO_Pin_3);
@@ -161,7 +161,7 @@ int main(void) {
 		 *    1) x < 3000 : 강한 빗물
 		 *    2) x < 3500 : 약한 빗물
 		 *    3) else : 빗물 x */
-		//LCD_ShowNum(20,60,ADC_result_value_arr[1],10,BLACK,WHITE);
+		LCD_ShowNum(190,245,ADC_result_value_arr[1],4,BLACK,WHITE);
 		if(ADC_result_value_arr[1]<3000) {
 			rain_power_flag = 2;
 			GPIO_ResetBits(GPIOD,GPIO_Pin_3);
@@ -178,7 +178,7 @@ int main(void) {
 		/* 인체 감지 센서 값 LCD에 출력
 		 *    1) x < 2000 : 사람 없음
 		 *    2) x > 2000 : 사람 감지 */
-		//LCD_ShowNum(20, 80, ADC_result_value_arr[2], 10, BLACK, WHITE);
+		LCD_ShowNum(190,265,ADC_result_value_arr[2],4,BLACK,WHITE);
 		if(ADC_result_value_arr[2] > 2000) {
 			voice_command_enable = 1;
 		}else {
@@ -189,17 +189,18 @@ int main(void) {
 		 *    1) 온도 측정 : float형의 temp_val_real에 저장
 		 *    2) 습도 측정 : float형의 humi_val_real에 저장
 		 *    3) 이슬점 게산 : float형의 dew_point에 저장 */
-		err += SHT15_Measure(&temp_val, &checksum, TEMP);                  // 온도 측정
-		err += SHT15_Measure(&humi_val, &checksum, HUMI);                  // 습도 측정
-		if(err != 0)
-			SHT15_ConReset();
-		else {
-			SHT15_Calculate(temp_val, humi_val, &temp_val_real, &humi_val_real);	// 실제 온도 및 습도 값 계산
-			dew_point = SHT15_CalcuDewPoint(temp_val_real, humi_val_real);			// 이슬점 온도 계산
-		}
+//		err += SHT15_Measure(&temp_val, &checksum, TEMP);                  // 온도 측정
+//		err += SHT15_Measure(&humi_val, &checksum, HUMI);                  // 습도 측정
+//		if(err != 0)
+//			SHT15_ConReset();
+//		else {
+//			SHT15_Calculate(temp_val, humi_val, &temp_val_real, &humi_val_real);	// 실제 온도 및 습도 값 계산
+//			dew_point = SHT15_CalcuDewPoint(temp_val_real, humi_val_real);			// 이슬점 온도 계산
+//		}
 		//LCD_ShowNum(20,100,(int)temp_val_real,10,BLACK,WHITE);
 		//LCD_ShowNum(20,120,(int)humi_val_real,10,BLACK,WHITE);
 		//LCD_ShowNum(20,140,(int)dew_point,10,BLACK,WHITE);
+
 
 		/* MPU6050 6축 자이로 가속도 센서 사용
 		 *    1) 경사 측정 : raw sensor데이터를 받아 각도 계산
