@@ -4,10 +4,16 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../proto_smartcar.c 
+../DHT11.c \
+../delay.c \
+../proto_smartcar.c \
+../usart.c 
 
 OBJS += \
-./proto_smartcar.o 
+./DHT11.o \
+./delay.o \
+./proto_smartcar.o \
+./usart.o 
 
 
 # Each subdirectory must supply rules for building sources it contributes

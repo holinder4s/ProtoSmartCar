@@ -20,6 +20,10 @@
 #include <MPU6050.h>
 #include <stdbool.h>
 #include <math.h>
+
+#include "usart.h"
+#include "DHT11.h"
+#include "delay.h"
 //#include <Tick.h>
 
 /* Globl Variables
@@ -62,6 +66,10 @@ float last_gyro_angle_x, last_gyro_angle_y, last_gyro_angle_z;
 uint32_t g_currentTick = 0;
 
 int speed_updown_timer_count = 0;
+
+/* DHT11 온습도 센서 */
+u8 temperature;
+u8 humidity;
 
 void RCC_Configure(void);
 void USART_Configure(void);
@@ -134,6 +142,7 @@ int main(void) {
 
 	/* Debug용 : 나중에 삭제할 것! */
 	GPIO_ResetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
+	command_move(1);
 	while (1) {
 		/* 조도센서 값 LCD에 출력
 		 *    1) x > 3000 : 밤(어두움)
@@ -201,19 +210,21 @@ int main(void) {
 		 *    6) -40도 이하 : DC 모터 출력 30%(속도 저하) */
 		if (MPU6050_TestConnection() != 0) {
 			if(AccelGyroAverage_flag == true) {
-//				AccelGyroInitialize();
-//				calculate_accelgyro_average(10);
-//				AccelGyroAverage_flag = false;
+				AccelGyroInitialize();
+				calculate_accelgyro_average(10);
+				AccelGyroAverage_flag = false;
 			}else {
-//				/* Sensor로부터 데이터 받아오기 */
-//				MPU6050_GetRawAccelGyro(AccelGyro);
-//				/* 센서 raw데이터를 각도로 가공 및 출력 */
-//				PrintAccelGryroRaw2Angle(AccelGyro);
-//
-//				/* 경사각측정과 DC모터 속도 제어를 통해 차량 속도를 유지 */
-//				/* 1초마다 TIM2 Interrupt Handler에서 속도 제어 */
+				/* Sensor로부터 데이터 받아오기 */
+				MPU6050_GetRawAccelGyro(AccelGyro);
+				/* 센서 raw데이터를 각도로 가공 및 출력 */
+				PrintAccelGryroRaw2Angle(AccelGyro);
+
+				/* 경사각측정과 DC모터 속도 제어를 통해 차량 속도를 유지 */
+				/* 1초마다 TIM2 Interrupt Handler에서 속도 제어 */
 			}
 		}
+
+		/* DHT11 온습도센서 */
 	}
 }
 
@@ -348,20 +359,20 @@ void _GPIO_MOTOR1Init(void) {
 	GPIOB_MOTOR1_init.GPIO_Mode = GPIO_Mode_Out_PP;
 	GPIOB_MOTOR1_init.GPIO_Speed = GPIO_Speed_50MHz;
 
-	GPIOB_MOTOR1_init.GPIO_Pin = GPIO_Pin_8;
-	GPIO_Init(GPIOB, &GPIOB_MOTOR1_init);
+	GPIOB_MOTOR1_init.GPIO_Pin = GPIO_Pin_0;
+	GPIO_Init(GPIOE, &GPIOB_MOTOR1_init);
 
-	GPIOB_MOTOR1_init.GPIO_Pin = GPIO_Pin_9;
-	GPIO_Init(GPIOB, &GPIOB_MOTOR1_init);
+	GPIOB_MOTOR1_init.GPIO_Pin = GPIO_Pin_1;
+	GPIO_Init(GPIOE, &GPIOB_MOTOR1_init);
 
-	GPIOB_MOTOR1_init.GPIO_Pin = GPIO_Pin_14;
-	GPIO_Init(GPIOB, &GPIOB_MOTOR1_init);
+	GPIOB_MOTOR1_init.GPIO_Pin = GPIO_Pin_2;
+	GPIO_Init(GPIOE, &GPIOB_MOTOR1_init);
 
-	GPIOB_MOTOR1_init.GPIO_Pin = GPIO_Pin_15;
-	GPIO_Init(GPIOB, &GPIOB_MOTOR1_init);
+	GPIOB_MOTOR1_init.GPIO_Pin = GPIO_Pin_3;
+	GPIO_Init(GPIOE, &GPIOB_MOTOR1_init);
 
 	/* 모터 정지 모드로 초기화 */
-	GPIO_ResetBits(GPIOB, GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_14 | GPIO_Pin_15);
+	GPIO_ResetBits(GPIOE, GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3);
 }
 
 void _GPIO_MOTOR2Init(void) {
@@ -599,11 +610,11 @@ void SendString(USART_TypeDef* USARTx, char* string) {
 void _command_forward(void) {
 	/* 모터드라이버1 제어 */
 	/* 왼쪽 바퀴 : in1(High)/in2(Low) */
-	GPIO_SetBits(GPIOB, GPIO_Pin_8);
-	GPIO_ResetBits(GPIOB, GPIO_Pin_9);
+	GPIO_SetBits(GPIOE, GPIO_Pin_0);
+	GPIO_ResetBits(GPIOE, GPIO_Pin_1);
 	/* 오른쪽 바퀴 : in3(High)/in4(Low) */
-	GPIO_SetBits(GPIOB, GPIO_Pin_14);
-	GPIO_ResetBits(GPIOB, GPIO_Pin_15);
+	GPIO_SetBits(GPIOE, GPIO_Pin_2);
+	GPIO_ResetBits(GPIOE, GPIO_Pin_3);
 
 	/* 모터드라이버2 제어 */
 	/* 왼쪽 바퀴 : in1(High)/in2(Low) */
@@ -617,11 +628,11 @@ void _command_forward(void) {
 void _command_backward(void) {
 	/* 모터드라이버1 제어 */
 	/* 왼쪽 바퀴 : in1(Low)/in2(High) */
-	GPIO_ResetBits(GPIOB, GPIO_Pin_8);
-	GPIO_SetBits(GPIOB, GPIO_Pin_9);
+	GPIO_ResetBits(GPIOE, GPIO_Pin_0);
+	GPIO_SetBits(GPIOE, GPIO_Pin_1);
 	/* 오른쪽 바퀴 : in3(Low)/in4(High) */
-	GPIO_ResetBits(GPIOB, GPIO_Pin_14);
-	GPIO_SetBits(GPIOB, GPIO_Pin_15);
+	GPIO_ResetBits(GPIOE, GPIO_Pin_2);
+	GPIO_SetBits(GPIOE, GPIO_Pin_3);
 
 	/* 모터드라이버2 제어 */
 	/* 왼쪽 바퀴 : in1(Low)/in2(High) */
@@ -637,11 +648,11 @@ void _command_left(void) {
 
 	/* 모터드라이버1 제어 */
 	/* 왼쪽 바퀴 : in1(Low)/in2(High) => 역방향 */
-	GPIO_ResetBits(GPIOB, GPIO_Pin_8);
-	GPIO_SetBits(GPIOB, GPIO_Pin_9);
+	GPIO_ResetBits(GPIOE, GPIO_Pin_0);
+	GPIO_SetBits(GPIOE, GPIO_Pin_1);
 	/* 오른쪽 바퀴 : in3(High)/in4(Low) => 정방향 */
-	GPIO_SetBits(GPIOB, GPIO_Pin_14);
-	GPIO_ResetBits(GPIOB, GPIO_Pin_15);
+	GPIO_SetBits(GPIOE, GPIO_Pin_2);
+	GPIO_ResetBits(GPIOE, GPIO_Pin_3);
 
 	/* 모터드라이버2 제어 */
 	/* 왼쪽 바퀴 : in1(Low)/in2(High) => 역방향 */
@@ -657,11 +668,11 @@ void _command_right(void) {
 
 	/* 모터드라이버1 제어 */
 	/* 왼쪽 바퀴 : in1(High)/in2(Low) => 정방향 */
-	GPIO_SetBits(GPIOB, GPIO_Pin_8);
-	GPIO_ResetBits(GPIOB, GPIO_Pin_9);
+	GPIO_SetBits(GPIOE, GPIO_Pin_0);
+	GPIO_ResetBits(GPIOE, GPIO_Pin_1);
 	/* 오른쪽 바퀴 : in3(Low)/in4(High) => 역방향 */
-	GPIO_ResetBits(GPIOB, GPIO_Pin_14);
-	GPIO_SetBits(GPIOB, GPIO_Pin_15);
+	GPIO_ResetBits(GPIOE, GPIO_Pin_2);
+	GPIO_SetBits(GPIOE, GPIO_Pin_3);
 
 	/* 모터드라이버2 제어 */
 	/* 왼쪽 바퀴 : in1(High)/in2(Low) => 정방향 */
@@ -676,7 +687,7 @@ void _command_stop(void) {
 	/* 모터드라이버1 제어 */
 	/* 왼쪽 바퀴 : in1(Low)/in2(Low) => 정지
 	 * 오른쪽 바퀴 : in3(Low)/in4(Low) => 정지 */
-	GPIO_ResetBits(GPIOB, GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_14 | GPIO_Pin_15);
+	GPIO_ResetBits(GPIOE, GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3);
 
 	/* 모터드라이버2 제어 */
 	/* 왼쪽 바퀴 : in1(Low)/in2(Low) => 정지
