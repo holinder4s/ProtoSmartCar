@@ -223,6 +223,7 @@ int main(void) {
 
 				/* 경사각측정과 DC모터 속도 제어를 통해 차량 속도를 유지 */
 				/* 1초마다 TIM2 Interrupt Handler에서 속도 제어 */
+
 			}
 		}
 
@@ -1050,21 +1051,21 @@ void TIM2_IRQHandler(void) {
 			}
 		}
 
-//		if(speed_updown_timer_count % 2 == 0) {
-//			if((int)last_angle_x >= 40) {
-//				speed_up_down(700);
-//			}else if((int)last_angle_x >= 20) {
-//				speed_up_down(600);
-//			}else if((int)last_angle_x <= (-1)*40) {
-//				speed_up_down(300);
-//			}else if((int)last_angle_x <= (-1)*20) {
-//				speed_up_down(400);
-//			}else {
-//				speed_up_down(500);
-//			}
-//			speed_updown_timer_count = speed_updown_timer_count % 2;
-//		}
-//		speed_updown_timer_count++;
+		if(speed_updown_timer_count % 2 == 0) {
+			if((int)last_angle_x >= 40) {
+				speed_up_down(700);
+			}else if((int)last_angle_x >= 20) {
+				speed_up_down(600);
+			}else if((int)last_angle_x <= (-1)*40) {
+				speed_up_down(300);
+			}else if((int)last_angle_x <= (-1)*20) {
+				speed_up_down(400);
+			}else {
+				speed_up_down(500);
+			}
+			speed_updown_timer_count = speed_updown_timer_count % 2;
+		}
+		speed_updown_timer_count++;
 
 		TIM_ClearITPendingBit(TIM2, TIM_IT_Update);		// clear interrupt flag
 	}
