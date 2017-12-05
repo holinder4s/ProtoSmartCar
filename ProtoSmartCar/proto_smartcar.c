@@ -27,19 +27,19 @@
 //#include <Tick.h>
 
 /* Globl Variables
- *    1) ADC_result_value_arr[2] : [0](Á¶µµ¼¾¼­), [1](ºø¹°°¨Áö¼¾¼­), [2](ÀÎÃ¼°¨Áö¼¾¼­)
- *    2) command[100] : ¸í·É¾î ¹öÆÛ
- *    3) command_pos : ¸í·É¾î À§Ä¡ ÃÊ±âÈ­ ¿ëµµ
- *    4) voiceBuffer : º¸ÀÌ½º ¸í·É¾î ¹®ÀÚ¿­ ¼Â
- *    5) rain_power_flag : ºñÀÇ ¼¼±â
- *    6) servo_direction : ¿ÍÀÌÆÛ¸¦ ÁÖ±âÀûÀ¸·Î ¿Õº¹½ÃÅ°±â À§ÇÑ ¹æÇâ ÇÃ·¡±×
- *    7) timer_count : ºñÀÇ ¼¼±â¿¡ µû¶ó ¿ÍÀÌÆÛÀÇ ¼Óµµ¸¦ Á¶ÀıÇÏ±â À§ÇÑ timer count
- *    8) voice_command_enable : À½¼º ¸í·É ¸ğµå È°¼ºÈ­ ÇÃ·¡±×
- *    9) AccelGyro[6] : °¡¼Óµµ ¼¾¼­ Raw µ¥ÀÌÅÍ
- *    10) AccelGyroAverage_flag : trueÀÌ¸é average°è»ê ¸ğµå(ÃÊ±âÈ­), falseÀÌ¸é Á¤»ó µ¿ÀÛ
- *    11) base_???_? : °¡¼Óµµ ¼¾¼­ Raw µ¥ÀÌÅÍ Æò±Õ °ª
- *    12) last_???_??? : ÃÖ½Å °¡¼Óµµ ¼¾¼­ °¡°ø °ª
- *    13) g_currentTick : TickCount°ª => ½Ã°£ °è»êÀ» À§ÇØ ÀÌ¿ë(1msec)*/
+ *    1) ADC_result_value_arr[2] : [0](ì¡°ë„ì„¼ì„œ), [1](ë¹—ë¬¼ê°ì§€ì„¼ì„œ), [2](ì¸ì²´ê°ì§€ì„¼ì„œ)
+ *    2) command[100] : ëª…ë ¹ì–´ ë²„í¼
+ *    3) command_pos : ëª…ë ¹ì–´ ìœ„ì¹˜ ì´ˆê¸°í™” ìš©ë„
+ *    4) voiceBuffer : ë³´ì´ìŠ¤ ëª…ë ¹ì–´ ë¬¸ìì—´ ì…‹
+ *    5) rain_power_flag : ë¹„ì˜ ì„¸ê¸°
+ *    6) servo_direction : ì™€ì´í¼ë¥¼ ì£¼ê¸°ì ìœ¼ë¡œ ì™•ë³µì‹œí‚¤ê¸° ìœ„í•œ ë°©í–¥ í”Œë˜ê·¸
+ *    7) timer_count : ë¹„ì˜ ì„¸ê¸°ì— ë”°ë¼ ì™€ì´í¼ì˜ ì†ë„ë¥¼ ì¡°ì ˆí•˜ê¸° ìœ„í•œ timer count
+ *    8) voice_command_enable : ìŒì„± ëª…ë ¹ ëª¨ë“œ í™œì„±í™” í”Œë˜ê·¸
+ *    9) AccelGyro[6] : ê°€ì†ë„ ì„¼ì„œ Raw ë°ì´í„°
+ *    10) AccelGyroAverage_flag : trueì´ë©´ averageê³„ì‚° ëª¨ë“œ(ì´ˆê¸°í™”), falseì´ë©´ ì •ìƒ ë™ì‘
+ *    11) base_???_? : ê°€ì†ë„ ì„¼ì„œ Raw ë°ì´í„° í‰ê·  ê°’
+ *    12) last_???_??? : ìµœì‹  ê°€ì†ë„ ì„¼ì„œ ê°€ê³µ ê°’
+ *    13) g_currentTick : TickCountê°’ => ì‹œê°„ ê³„ì‚°ì„ ìœ„í•´ ì´ìš©(1msec)*/
 __IO uint32_t ADC_result_value_arr[3];
 char command[100];
 int command_pos=0;
@@ -53,7 +53,7 @@ int servo_direction = 0;
 int timer_count = 0;
 int voice_command_enable = 0;
 
-/* wjdebug : °¡¼Óµµ ¼¾¼­ Å×½ºÆ® */
+/* wjdebug : ê°€ì†ë„ ì„¼ì„œ í…ŒìŠ¤íŠ¸ */
 int16_t  AccelGyro[6]={0};
 bool AccelGyroAverage_flag = true;
 uint16_t base_accel_x=0, base_accel_y=0, base_accel_z=0;
@@ -62,12 +62,12 @@ unsigned long last_read_time;
 float last_angle_x, last_angle_y, last_angle_z;
 float last_gyro_angle_x, last_gyro_angle_y, last_gyro_angle_z;
 
-/* ÇöÀç Tick Count°ªÀ» ÀúÀåÇÏ´Â Àü¿ªº¯¼ö */
+/* í˜„ì¬ Tick Countê°’ì„ ì €ì¥í•˜ëŠ” ì „ì—­ë³€ìˆ˜ */
 uint32_t g_currentTick = 0;
 
 int speed_updown_timer_count = 0;
 
-/* DHT11 ¿Â½Àµµ ¼¾¼­ */
+/* DHT11 ì˜¨ìŠµë„ ì„¼ì„œ */
 u8 temperature;
 u8 humidity;
 
@@ -109,14 +109,14 @@ void UIOutline_Init(void);
 
 
 int main(void) {
-	/* SHT15 ¿Â½Àµµ¼¾¼­ Variables */
+	/* SHT15 ì˜¨ìŠµë„ì„¼ì„œ Variables */
 	uint16_t humi_val, temp_val;
 	uint8_t err = 0, checksum = 0;
 	float humi_val_real = 0.0;
 	float temp_val_real = 0.0;
 	float dew_point = 0.0;
 
-	/* ÃÊ±âÈ­ ¹× Configuration ÀÛ¾÷ */
+	/* ì´ˆê¸°í™” ë° Configuration ì‘ì—… */
 	RCC_Configure();
 	LCD_Init();
 	USART_Configure();
@@ -124,29 +124,29 @@ int main(void) {
 	ADC_Configure();
 	TIM_PWM_Configure();
 	DMA_Configure();
-	MPU6050_I2C_Init();			// MPU6050À» »ç¿ëÇÏ±â À§ÇÑ I2C ¼³Á¤
+	MPU6050_I2C_Init();			// MPU6050ì„ ì‚¬ìš©í•˜ê¸° ìœ„í•œ I2C ì„¤ì •
 	Interrupt_Configure();
 
 	ADC_Initialize();
 
-	/* SHT15 ÃÊ±âÈ­ */
+	/* SHT15 ì´ˆê¸°í™” */
 	SHT15_Init();
 
-	/* I2C¸¦ ÀÌ¿ëÇÑ MPU6050 ÃÊ±âÈ­ */
+	/* I2Cë¥¼ ì´ìš©í•œ MPU6050 ì´ˆê¸°í™” */
 	MPU6050_Initialize();
 
-	/* ¸ŞÀÎ UIÆ² ÃÊ±âÈ­ */
+	/* ë©”ì¸ UIí‹€ ì´ˆê¸°í™” */
 	LCD_Clear(WHITE);
-	//UIOutline_Init();
+	UIOutline_Init();
 	//LCD_ShowString(50, 130, "Accident Occur!!!", RED, WHITE);
 
-	/* Debug¿ë : ³ªÁß¿¡ »èÁ¦ÇÒ °Í! */
-	GPIO_ResetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
-	command_move(1);
+	/* Debugìš© : ë‚˜ì¤‘ì— ì‚­ì œí•  ê²ƒ! */
+	//GPIOResetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
+	//command_move(1);
 	while (1) {
-		/* Á¶µµ¼¾¼­ °ª LCD¿¡ Ãâ·Â
-		 *    1) x > 3000 : ¹ã(¾îµÎ¿ò)
-		 *    2) else : ³·(¹àÀ½) */
+		/* ì¡°ë„ì„¼ì„œ ê°’ LCDì— ì¶œë ¥
+		 *    1) x > 3000 : ë°¤(ì–´ë‘ì›€)
+		 *    2) else : ë‚®(ë°ìŒ) */
 		LCD_ShowNum(190,225,ADC_result_value_arr[0],4,BLACK,WHITE);
 		if(ADC_result_value_arr[0] > 3000) {
 			GPIO_SetBits(GPIOD,GPIO_Pin_2);
@@ -157,10 +157,10 @@ int main(void) {
 			GPIO_ResetBits(GPIOD,GPIO_Pin_3);
 		}
 
-		/* ºø¹° °¨Áö ¼¾¼­ °ª LCD¿¡ Ãâ·Â
-		 *    1) x < 3000 : °­ÇÑ ºø¹°
-		 *    2) x < 3500 : ¾àÇÑ ºø¹°
-		 *    3) else : ºø¹° x */
+		/* ë¹—ë¬¼ ê°ì§€ ì„¼ì„œ ê°’ LCDì— ì¶œë ¥
+		 *    1) x < 3000 : ê°•í•œ ë¹—ë¬¼
+		 *    2) x < 3500 : ì•½í•œ ë¹—ë¬¼
+		 *    3) else : ë¹—ë¬¼ x */
 		LCD_ShowNum(190,245,ADC_result_value_arr[1],4,BLACK,WHITE);
 		if(ADC_result_value_arr[1]<3000) {
 			rain_power_flag = 2;
@@ -175,9 +175,9 @@ int main(void) {
 			GPIO_ResetBits(GPIOD,GPIO_Pin_7);
 		}
 
-		/* ÀÎÃ¼ °¨Áö ¼¾¼­ °ª LCD¿¡ Ãâ·Â
-		 *    1) x < 2000 : »ç¶÷ ¾øÀ½
-		 *    2) x > 2000 : »ç¶÷ °¨Áö */
+		/* ì¸ì²´ ê°ì§€ ì„¼ì„œ ê°’ LCDì— ì¶œë ¥
+		 *    1) x < 2000 : ì‚¬ëŒ ì—†ìŒ
+		 *    2) x > 2000 : ì‚¬ëŒ ê°ì§€ */
 		LCD_ShowNum(190,265,ADC_result_value_arr[2],4,BLACK,WHITE);
 		if(ADC_result_value_arr[2] > 2000) {
 			voice_command_enable = 1;
@@ -185,90 +185,91 @@ int main(void) {
 			voice_command_enable = 0;
 		}
 
-		/* SHT15 ¿Â½Àµµ ¼¾¼­ »ç¿ë
-		 *    1) ¿Âµµ ÃøÁ¤ : floatÇüÀÇ temp_val_real¿¡ ÀúÀå
-		 *    2) ½Àµµ ÃøÁ¤ : floatÇüÀÇ humi_val_real¿¡ ÀúÀå
-		 *    3) ÀÌ½½Á¡ °Ô»ê : floatÇüÀÇ dew_point¿¡ ÀúÀå */
-//		err += SHT15_Measure(&temp_val, &checksum, TEMP);                  // ¿Âµµ ÃøÁ¤
-//		err += SHT15_Measure(&humi_val, &checksum, HUMI);                  // ½Àµµ ÃøÁ¤
+		/* SHT15 ì˜¨ìŠµë„ ì„¼ì„œ ì‚¬ìš©
+		 *    1) ì˜¨ë„ ì¸¡ì • : floatí˜•ì˜ temp_val_realì— ì €ì¥
+		 *    2) ìŠµë„ ì¸¡ì • : floatí˜•ì˜ humi_val_realì— ì €ì¥
+		 *    3) ì´ìŠ¬ì  ê²Œì‚° : floatí˜•ì˜ dew_pointì— ì €ì¥ */
+//		err += SHT15_Measure(&temp_val, &checksum, TEMP);                  // ì˜¨ë„ ì¸¡ì •
+//		err += SHT15_Measure(&humi_val, &checksum, HUMI);                  // ìŠµë„ ì¸¡ì •
 //		if(err != 0)
 //			SHT15_ConReset();
 //		else {
-//			SHT15_Calculate(temp_val, humi_val, &temp_val_real, &humi_val_real);	// ½ÇÁ¦ ¿Âµµ ¹× ½Àµµ °ª °è»ê
-//			dew_point = SHT15_CalcuDewPoint(temp_val_real, humi_val_real);			// ÀÌ½½Á¡ ¿Âµµ °è»ê
+//			SHT15_Calculate(temp_val, humi_val, &temp_val_real, &humi_val_real);	// ì‹¤ì œ ì˜¨ë„ ë° ìŠµë„ ê°’ ê³„ì‚°
+//			dew_point = SHT15_CalcuDewPoint(temp_val_real, humi_val_real);			// ì´ìŠ¬ì  ì˜¨ë„ ê³„ì‚°
 //		}
 		//LCD_ShowNum(20,100,(int)temp_val_real,10,BLACK,WHITE);
 		//LCD_ShowNum(20,120,(int)humi_val_real,10,BLACK,WHITE);
 		//LCD_ShowNum(20,140,(int)dew_point,10,BLACK,WHITE);
 
 
-		/* MPU6050 6Ãà ÀÚÀÌ·Î °¡¼Óµµ ¼¾¼­ »ç¿ë
-		 *    1) °æ»ç ÃøÁ¤ : raw sensorµ¥ÀÌÅÍ¸¦ ¹Ş¾Æ °¢µµ °è»ê
-		 *    2) 20µµ ÀÌ»ó : DC ¸ğÅÍ Ãâ·Â 60%(¼Óµµ Çâ»ó)
-		 *    3) 40µµ ÀÌ»ó : DC ¸ğÅÍ Ãâ·Â 70%(¼Óµµ Çâ»ó)
-		 *    4) -20µµ ~ 20µµ : DC ¸ğÅÍ Ãâ·Â 50%(Æò±Õ ¼Óµµ)
-		 *    5) -20µµ ÀÌÇÏ : DC ¸ğÅÍ Ãâ·Â 40%(¼Óµµ ÀúÇÏ)
-		 *    6) -40µµ ÀÌÇÏ : DC ¸ğÅÍ Ãâ·Â 30%(¼Óµµ ÀúÇÏ) */
+		/* MPU6050 6ì¶• ìì´ë¡œ ê°€ì†ë„ ì„¼ì„œ ì‚¬ìš©
+		 *    1) ê²½ì‚¬ ì¸¡ì • : raw sensorë°ì´í„°ë¥¼ ë°›ì•„ ê°ë„ ê³„ì‚°
+		 *    2) 20ë„ ì´ìƒ : DC ëª¨í„° ì¶œë ¥ 60%(ì†ë„ í–¥ìƒ)
+		 *    3) 40ë„ ì´ìƒ : DC ëª¨í„° ì¶œë ¥ 70%(ì†ë„ í–¥ìƒ)
+		 *    4) -20ë„ ~ 20ë„ : DC ëª¨í„° ì¶œë ¥ 50%(í‰ê·  ì†ë„)
+		 *    5) -20ë„ ì´í•˜ : DC ëª¨í„° ì¶œë ¥ 40%(ì†ë„ ì €í•˜)
+		 *    6) -40ë„ ì´í•˜ : DC ëª¨í„° ì¶œë ¥ 30%(ì†ë„ ì €í•˜) */
 		if (MPU6050_TestConnection() != 0) {
 			if(AccelGyroAverage_flag == true) {
 				AccelGyroInitialize();
 				calculate_accelgyro_average(10);
 				AccelGyroAverage_flag = false;
 			}else {
-				/* Sensor·ÎºÎÅÍ µ¥ÀÌÅÍ ¹Ş¾Æ¿À±â */
+
+				/* Sensorë¡œë¶€í„° ë°ì´í„° ë°›ì•„ì˜¤ê¸° */
 				MPU6050_GetRawAccelGyro(AccelGyro);
-				/* ¼¾¼­ rawµ¥ÀÌÅÍ¸¦ °¢µµ·Î °¡°ø ¹× Ãâ·Â */
+				/* ì„¼ì„œ rawë°ì´í„°ë¥¼ ê°ë„ë¡œ ê°€ê³µ ë° ì¶œë ¥ */
 				PrintAccelGryroRaw2Angle(AccelGyro);
 
-				/* °æ»ç°¢ÃøÁ¤°ú DC¸ğÅÍ ¼Óµµ Á¦¾î¸¦ ÅëÇØ Â÷·® ¼Óµµ¸¦ À¯Áö */
-				/* 1ÃÊ¸¶´Ù TIM2 Interrupt Handler¿¡¼­ ¼Óµµ Á¦¾î */
+				/* ê²½ì‚¬ê°ì¸¡ì •ê³¼ DCëª¨í„° ì†ë„ ì œì–´ë¥¼ í†µí•´ ì°¨ëŸ‰ ì†ë„ë¥¼ ìœ ì§€ */
+				/* 1ì´ˆë§ˆë‹¤ TIM2 Interrupt Handlerì—ì„œ ì†ë„ ì œì–´ */
 			}
 		}
 
-		/* DHT11 ¿Â½Àµµ¼¾¼­ */
+		/* DHT11 ì˜¨ìŠµë„ì„¼ì„œ */
 	}
 }
 
 
 void RCC_Configure(void) {
-	/* Enable Clock for Interrupt EXTI(¿ÜºÎ ÀÎÅÍ·´Æ®) */
+	/* Enable Clock for Interrupt EXTI(ì™¸ë¶€ ì¸í„°ëŸ½íŠ¸) */
 	//RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO);
 
-	/* Enable Clock for Bluetooth(USART2)(¾Èµå·ÎÀÌµå->º¸µå) and USART1 and USART3(PortB)(À½¼ºÀÎ½Ä¼¾¼­) */
-	// GPIOAÆ÷Æ®´Â USART¿¡ clock¶§¹®¿¡ »ç¿ëÇØ¾ßÇÏ´ÂÁö »ç¿ë ¾ÈÇØµµ µÇ´ÂÁö Àß ¸ğ¸£°ÚÀ½
+	/* Enable Clock for Bluetooth(USART2)(ì•ˆë“œë¡œì´ë“œ->ë³´ë“œ) and USART1 and USART3(PortB)(ìŒì„±ì¸ì‹ì„¼ì„œ) */
+	// GPIOAí¬íŠ¸ëŠ” USARTì— clockë•Œë¬¸ì— ì‚¬ìš©í•´ì•¼í•˜ëŠ”ì§€ ì‚¬ìš© ì•ˆí•´ë„ ë˜ëŠ”ì§€ ì˜ ëª¨ë¥´ê² ìŒ
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB | RCC_APB2ENR_USART1EN, ENABLE);
 	RCC_APB1PeriphClockCmd(RCC_APB1ENR_USART2EN | RCC_APB1ENR_USART3EN, ENABLE);
 
-	/* ¸ğÅÍµå¶óÀÌ¹ö
-	 *    1) ¸ğÅÍµå¶óÀÌ¹ö1(in1:PB8,in2:PB9,in3:PB14,in4:PB15)
-	 *    2) ¸ğÅÍµå¶óÀÌ¹ö2(in1:PE4,in2:PE5,in3:PE14,in4:PE15)  */
+	/* ëª¨í„°ë“œë¼ì´ë²„
+	 *    1) ëª¨í„°ë“œë¼ì´ë²„1(in1:PB8,in2:PB9,in3:PB14,in4:PB15)
+	 *    2) ëª¨í„°ë“œë¼ì´ë²„2(in1:PE4,in2:PE5,in3:PE14,in4:PE15)  */
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOE, ENABLE);
 
 	/* LED */
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOD, ENABLE);
 
-	/* Á¶µµ¼¾¼­¿Í ºø¹°°¨Áö¼¾¼­¸¦ »ç¿ëÇÏ±â À§ÇÑ ADC & DMA Å¬·° ÀÎ°¡ */
+	/* ì¡°ë„ì„¼ì„œì™€ ë¹—ë¬¼ê°ì§€ì„¼ì„œë¥¼ ì‚¬ìš©í•˜ê¸° ìœ„í•œ ADC & DMA í´ëŸ­ ì¸ê°€ */
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1,ENABLE);
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1,ENABLE);
 
-	/* Servo Motor¸¦ Á¦¾îÇÏ±â À§ÇÑ TIM3_Channel3(PB0) »ç¿ë */
-	/* ¹ÙÄû ¼Óµµ Á¦¾î(PWM)¸¦ À§ÇÑ TIM3_Channel1(PA6) »ç¿ë */
+	/* Servo Motorë¥¼ ì œì–´í•˜ê¸° ìœ„í•œ TIM3_Channel3(PB0) ì‚¬ìš© */
+	/* ë°”í€´ ì†ë„ ì œì–´(PWM)ë¥¼ ìœ„í•œ TIM3_Channel1(PA6) ì‚¬ìš© */
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
 
-	/* ¿ÍÀÌÆÛ ÀÛµ¿½Ã ÁÖ±â ¼³Á¤À» À§ÇÑ TIM2 »ç¿ë */
+	/* ì™€ì´í¼ ì‘ë™ì‹œ ì£¼ê¸° ì„¤ì •ì„ ìœ„í•œ TIM2 ì‚¬ìš© */
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
 
-	/* °¡¼Óµµ GetTickCount()¿ªÇÒÀ» ÇÏ´Â ÇÔ¼ö¸¦ À§ÇÑ TIM1(1msecÁÖ±â) Å¬·° ÀÎ°¡ */
+	/* ê°€ì†ë„ GetTickCount()ì—­í• ì„ í•˜ëŠ” í•¨ìˆ˜ë¥¼ ìœ„í•œ TIM1(1msecì£¼ê¸°) í´ëŸ­ ì¸ê°€ */
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1, ENABLE);
 }
 
 void USART_Configure(void) {
-	/* UART Åë½Å & BT ¼¼ÆÃ : USART1 */
+	/* UART í†µì‹  & BT ì„¸íŒ… : USART1 */
 	/* Bluetooth module : USART2 */
 	USART_InitTypeDef USART_init;
 
-	/* USART ±âº» ¼³Á¤ °ª ¼¼ÆÃ */
+	/* USART ê¸°ë³¸ ì„¤ì • ê°’ ì„¸íŒ… */
 	USART_init.USART_BaudRate = 9600;
 	USART_init.USART_WordLength = USART_WordLength_8b;
 	USART_init.USART_StopBits = USART_StopBits_1;
@@ -276,9 +277,9 @@ void USART_Configure(void) {
 	USART_init.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
 	USART_init.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
 
-	/* USART1 Init(ºí·çÅõ½º¸ğµâ ¼³Á¤À» À§ÇØ »ç¿ë) */
-	/* USART2 Init(ºí·çÅõ½º ¼ö½ÅÀ» À§ÇØ »ç¿ë, ¾Èµå·ÎÀÌµå->º¸µå)
-	 * USART3 Init(À½¼ºÀÎ½Ä¼¾¼­ »ç¿ë) */
+	/* USART1 Init(ë¸”ë£¨íˆ¬ìŠ¤ëª¨ë“ˆ ì„¤ì •ì„ ìœ„í•´ ì‚¬ìš©) */
+	/* USART2 Init(ë¸”ë£¨íˆ¬ìŠ¤ ìˆ˜ì‹ ì„ ìœ„í•´ ì‚¬ìš©, ì•ˆë“œë¡œì´ë“œ->ë³´ë“œ)
+	 * USART3 Init(ìŒì„±ì¸ì‹ì„¼ì„œ ì‚¬ìš©) */
 	USART_Init(USART1, &USART_init);
 	USART_Init(USART2, &USART_init);
 	USART_Init(USART3, &USART_init);
@@ -297,11 +298,11 @@ void USART_Configure(void) {
 void _GPIO_USARTInit(void) {
 	GPIO_InitTypeDef GPIO_USART_init;
 
-	/* USARTÀÇ input clockÀ» À§ÇÑ GPIOAÀÇ ±âº» °ª ¼¼ÆÃ */
+	/* USARTì˜ input clockì„ ìœ„í•œ GPIOAì˜ ê¸°ë³¸ ê°’ ì„¸íŒ… */
 	GPIO_USART_init.GPIO_Mode = GPIO_Mode_AF_PP;
 	GPIO_USART_init.GPIO_Speed = GPIO_Speed_50MHz;
 
-	/* GPIOAÀÇ 9¹ø 10¹ø ÇÉÀ» Alternative FunctionÀ¸·Î ¼¼ÆÃ */
+	/* GPIOAì˜ 9ë²ˆ 10ë²ˆ í•€ì„ Alternative Functionìœ¼ë¡œ ì„¸íŒ… */
 	GPIO_USART_init.GPIO_Pin = GPIO_Pin_9;
 	GPIO_Init(GPIOA, &GPIO_USART_init);
 
@@ -309,7 +310,7 @@ void _GPIO_USARTInit(void) {
 	GPIO_USART_init.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_Init(GPIOA, &GPIO_USART_init);
 
-	/* GPIOAÀÇ 2¹ø 3¹ø ÇÉÀ» Alternative FunctionÀ¸·Î ¼¼ÆÃ */
+	/* GPIOAì˜ 2ë²ˆ 3ë²ˆ í•€ì„ Alternative Functionìœ¼ë¡œ ì„¸íŒ… */
 	GPIO_USART_init.GPIO_Mode = GPIO_Mode_AF_PP;
 	GPIO_USART_init.GPIO_Speed = GPIO_Speed_50MHz;
 
@@ -320,7 +321,7 @@ void _GPIO_USARTInit(void) {
 	GPIO_USART_init.GPIO_Pin = GPIO_Pin_3;
 	GPIO_Init(GPIOA, &GPIO_USART_init);
 
-	/* GPIOAÀÇ 2¹ø 3¹ø ÇÉÀ» Alternative FunctionÀ¸·Î ¼¼ÆÃ */
+	/* GPIOAì˜ 2ë²ˆ 3ë²ˆ í•€ì„ Alternative Functionìœ¼ë¡œ ì„¸íŒ… */
 	GPIO_USART_init.GPIO_Mode = GPIO_Mode_AF_PP;
 	GPIO_USART_init.GPIO_Speed = GPIO_Speed_50MHz;
 
@@ -372,7 +373,7 @@ void _GPIO_MOTOR1Init(void) {
 	GPIOB_MOTOR1_init.GPIO_Pin = GPIO_Pin_3;
 	GPIO_Init(GPIOE, &GPIOB_MOTOR1_init);
 
-	/* ¸ğÅÍ Á¤Áö ¸ğµå·Î ÃÊ±âÈ­ */
+	/* ëª¨í„° ì •ì§€ ëª¨ë“œë¡œ ì´ˆê¸°í™” */
 	GPIO_ResetBits(GPIOE, GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3);
 }
 
@@ -394,7 +395,7 @@ void _GPIO_MOTOR2Init(void) {
 	GPIOE_MOTOR2_init.GPIO_Pin = GPIO_Pin_15;
 	GPIO_Init(GPIOE, &GPIOE_MOTOR2_init);
 
-	/* ¸ğÅÍ Á¤Áö ¸ğµå·Î ÃÊ±âÈ­ */
+	/* ëª¨í„° ì •ì§€ ëª¨ë“œë¡œ ì´ˆê¸°í™” */
 	GPIO_ResetBits(GPIOE, GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_14 | GPIO_Pin_15);
 }
 
@@ -422,11 +423,11 @@ void _GPIO_TIM3Ch3Ch1Init(void) {
 	GPIOB_TIM3Ch3Ch1_init.GPIO_Mode = GPIO_Mode_AF_PP;
 	GPIOB_TIM3Ch3Ch1_init.GPIO_Speed = GPIO_Speed_50MHz;
 
-	/* ¿ÍÀÌÆÛ °¢µµ Á¦¾î : TIM3_Channel3(PB0) GPIO ÃÊ±âÈ­ */
+	/* ì™€ì´í¼ ê°ë„ ì œì–´ : TIM3_Channel3(PB0) GPIO ì´ˆê¸°í™” */
 	GPIOB_TIM3Ch3Ch1_init.GPIO_Pin = GPIO_Pin_0;
 	GPIO_Init(GPIOB, &GPIOB_TIM3Ch3Ch1_init);
 
-	/* DC¸ğÅÍ ¼Óµµ Á¦¾î : TIM3_Channel1(PA6) GPIO ÃÊ±âÈ­ */
+	/* DCëª¨í„° ì†ë„ ì œì–´ : TIM3_Channel1(PA6) GPIO ì´ˆê¸°í™” */
 	GPIOB_TIM3Ch3Ch1_init.GPIO_Pin = GPIO_Pin_6;
 	GPIO_Init(GPIOA, &GPIOB_TIM3Ch3Ch1_init);
 }
@@ -440,7 +441,7 @@ void GPIO_Configure(void) {
 }
 
 void ADC_Configure(void){
-	/* ADC Channel 11(PC1), 12(PC2), 13(PC3) »ç¿ë */
+	/* ADC Channel 11(PC1), 12(PC2), 13(PC3) ì‚¬ìš© */
 	ADC_InitTypeDef ADC_InitStructure;
 	ADC_DeInit(ADC1);
 	ADC_InitStructure.ADC_Mode=ADC_Mode_Independent;
@@ -459,20 +460,20 @@ void ADC_Configure(void){
 }
 
 void ADC_Initialize(void){
-	/* ADC Calibration ÃÊ±âÈ­ */
+	/* ADC Calibration ì´ˆê¸°í™” */
 	ADC_ResetCalibration(ADC1);
 	while(ADC_GetResetCalibrationStatus(ADC1));
 	ADC_StartCalibration(ADC1);
 	while(ADC_GetCalibrationStatus(ADC1));
 
-	/* ADC Convert ½ÃÀÛ */
+	/* ADC Convert ì‹œì‘ */
 	ADC_SoftwareStartConvCmd(ADC1,ENABLE);
 }
 
 void _TIM3Ch3Ch1_PWM_Configure(void) {
-	/* ±âº» System Clock : 72MHz
-	 * Prescale = 72MHz / 1MHz - 1 = 71 => 72MHz¸¦ 1MHz Timer clockÀ¸·Î ¼¼ÆÃ
-	 * TIM_Period = 1MHz / 50Hz = 20,000 => 1MHz Timer ClockÀ» 20,000ÁÖ±â¸¦ ÅëÇØ 50Hz ÁÖ±â·Î ¼¼ÆÃ */
+	/* ê¸°ë³¸ System Clock : 72MHz
+	 * Prescale = 72MHz / 1MHz - 1 = 71 => 72MHzë¥¼ 1MHz Timer clockìœ¼ë¡œ ì„¸íŒ…
+	 * TIM_Period = 1MHz / 50Hz = 20,000 => 1MHz Timer Clockì„ 20,000ì£¼ê¸°ë¥¼ í†µí•´ 50Hz ì£¼ê¸°ë¡œ ì„¸íŒ… */
 	TIM_TimeBaseInitTypeDef TIM3Ch3Ch1_Init;
 
 	TIM_OCInitTypeDef PWM_TIM3Ch3Ch1_Init;
@@ -487,13 +488,13 @@ void _TIM3Ch3Ch1_PWM_Configure(void) {
 	PWM_TIM3Ch3Ch1_Init.TIM_OCPolarity = TIM_OCPolarity_High;
 	PWM_TIM3Ch3Ch1_Init.TIM_OutputState = TIM_OutputState_Enable;
 
-	/* Servo Moter 0µµ : 7.5% Duty CycleÀ» ÃÊ±â °ªÀ¸·Î PWM mode ¼³Á¤ */
-	/* ¼­º¸ ¸ğÅÍ °¢µµ Á¦¾î : ÃÊ±â duty cycleÀ» 7.5%·Î ÃÊ±âÈ­ */
+	/* Servo Moter 0ë„ : 7.5% Duty Cycleì„ ì´ˆê¸° ê°’ìœ¼ë¡œ PWM mode ì„¤ì • */
+	/* ì„œë³´ ëª¨í„° ê°ë„ ì œì–´ : ì´ˆê¸° duty cycleì„ 7.5%ë¡œ ì´ˆê¸°í™” */
 	PWM_TIM3Ch3Ch1_Init.TIM_Pulse = 1500;
 	TIM_OC3Init(TIM3, &PWM_TIM3Ch3Ch1_Init);
 	TIM_OC3PreloadConfig(TIM3, TIM_OCPreload_Disable);
 
-	/* DC ¸ğÅÍ ¼Óµµ Á¦¾î : ÃÊ±â duty cycleÀ» 50%·Î ÃÊ±âÈ­ */
+	/* DC ëª¨í„° ì†ë„ ì œì–´ : ì´ˆê¸° duty cycleì„ 50%ë¡œ ì´ˆê¸°í™” */
 	PWM_TIM3Ch3Ch1_Init.TIM_Pulse = 10000;
 	TIM_OC1Init(TIM3, &PWM_TIM3Ch3Ch1_Init);
 	TIM_OC1PreloadConfig(TIM3, TIM_OCPreload_Disable);
@@ -503,9 +504,9 @@ void _TIM3Ch3Ch1_PWM_Configure(void) {
 }
 
 void _TIM2_Configure(void) {
-	/* ±âº» System Clock : 72MHz
-	 * Prescale = 72MHz / 100KHz - 1 = 719 => 72MHz¸¦ 100KHz Timer clockÀ¸·Î ¼¼ÆÃ
-	 * TIM_Period = 100KHz / 2Hz = 50,000 => 100KHz Timer clockÀ» 50,000ÁÖ±â¸¦ ÅëÇØ 2Hz(0.5sec) ÁÖ±â·Î ¼¼ÆÃ */
+	/* ê¸°ë³¸ System Clock : 72MHz
+	 * Prescale = 72MHz / 100KHz - 1 = 719 => 72MHzë¥¼ 100KHz Timer clockìœ¼ë¡œ ì„¸íŒ…
+	 * TIM_Period = 100KHz / 2Hz = 50,000 => 100KHz Timer clockì„ 50,000ì£¼ê¸°ë¥¼ í†µí•´ 2Hz(0.5sec) ì£¼ê¸°ë¡œ ì„¸íŒ… */
 	TIM_TimeBaseInitTypeDef TIM2_Init;
 
 	TIM2_Init.TIM_Prescaler = (uint16_t)(SystemCoreClock / 100000) - 1;
@@ -520,9 +521,9 @@ void _TIM2_Configure(void) {
 }
 
 void _TIM1_Configure(void) {
-	/* ±âº» System Clock : 72MHz
-	 * Prescale = 72MHz / 100KHz - 1 = 719 => 72MHz¸¦ 100KHz Timer clockÀ¸·Î ¼¼ÆÃ
-	 * TIM_Period = 100KHz / 1KHz - 1 = 99 => 100KHz Timer clockÀ» 100ÁÖ±â¸¦ ÅëÇØ 1KHz(1msec) ÁÖ±â·Î ¼¼ÆÃ */
+	/* ê¸°ë³¸ System Clock : 72MHz
+	 * Prescale = 72MHz / 100KHz - 1 = 719 => 72MHzë¥¼ 100KHz Timer clockìœ¼ë¡œ ì„¸íŒ…
+	 * TIM_Period = 100KHz / 1KHz - 1 = 99 => 100KHz Timer clockì„ 100ì£¼ê¸°ë¥¼ í†µí•´ 1KHz(1msec) ì£¼ê¸°ë¡œ ì„¸íŒ… */
 	TIM_TimeBaseInitTypeDef TIM1_Init;
 
 	TIM1_Init.TIM_Prescaler = (uint16_t)(SystemCoreClock / 100000) - 1;
@@ -543,7 +544,7 @@ void TIM_PWM_Configure(void){
 }
 
 void DMA_Configure(void){
-	/* DMA1 Channel 11¹ø Configure*/
+	/* DMA1 Channel 11ë²ˆ Configure*/
 	DMA_InitTypeDef DMA_init;
 
 	DMA_DeInit(DMA1_Channel1);
@@ -567,7 +568,7 @@ void DMA_Configure(void){
 void _USART_ITR_Configure(void) {
 	NVIC_InitTypeDef NVIC_init;
 
-	/* USART¸¦ À§ÇÑ NVIC ±âº» °ª ¼¼ÆÃ(¿ì¼±¼øÀ§ 0) */
+	/* USARTë¥¼ ìœ„í•œ NVIC ê¸°ë³¸ ê°’ ì„¸íŒ…(ìš°ì„ ìˆœìœ„ 0) */
 	NVIC_init.NVIC_IRQChannelPreemptionPriority = 0;
 	NVIC_init.NVIC_IRQChannelSubPriority = 0;
 	NVIC_init.NVIC_IRQChannelCmd = ENABLE;
@@ -599,7 +600,7 @@ void Interrupt_Configure(void) {
 	_TIM2_ITR_Configure();
 }
 
-/* Todo : ÀÌ°Ô ÇÊ¿äÇÒÁö Àß ¸ğ¸£°Ú´Ù. ³ªÁß¿¡ ÇÊ¿ä¾øÀ¸¸é »èÁ¦ÇÒ °Í */
+/* Todo : ì´ê²Œ í•„ìš”í• ì§€ ì˜ ëª¨ë¥´ê² ë‹¤. ë‚˜ì¤‘ì— í•„ìš”ì—†ìœ¼ë©´ ì‚­ì œí•  ê²ƒ */
 void SendString(USART_TypeDef* USARTx, char* string) {
 	int i=0;
 	for(i=0; i<strlen(string); i++) {
@@ -609,99 +610,99 @@ void SendString(USART_TypeDef* USARTx, char* string) {
 }
 
 void _command_forward(void) {
-	/* ¸ğÅÍµå¶óÀÌ¹ö1 Á¦¾î */
-	/* ¿ŞÂÊ ¹ÙÄû : in1(High)/in2(Low) */
+	/* ëª¨í„°ë“œë¼ì´ë²„1 ì œì–´ */
+	/* ì™¼ìª½ ë°”í€´ : in1(High)/in2(Low) */
 	GPIO_SetBits(GPIOE, GPIO_Pin_0);
 	GPIO_ResetBits(GPIOE, GPIO_Pin_1);
-	/* ¿À¸¥ÂÊ ¹ÙÄû : in3(High)/in4(Low) */
+	/* ì˜¤ë¥¸ìª½ ë°”í€´ : in3(High)/in4(Low) */
 	GPIO_SetBits(GPIOE, GPIO_Pin_2);
 	GPIO_ResetBits(GPIOE, GPIO_Pin_3);
 
-	/* ¸ğÅÍµå¶óÀÌ¹ö2 Á¦¾î */
-	/* ¿ŞÂÊ ¹ÙÄû : in1(High)/in2(Low) */
+	/* ëª¨í„°ë“œë¼ì´ë²„2 ì œì–´ */
+	/* ì™¼ìª½ ë°”í€´ : in1(High)/in2(Low) */
 	GPIO_ResetBits(GPIOE, GPIO_Pin_4);
 	GPIO_SetBits(GPIOE, GPIO_Pin_5);
-	/* ¿À¸¥ÂÊ ¹ÙÄû : in3(High)/in4(Low) */
+	/* ì˜¤ë¥¸ìª½ ë°”í€´ : in3(High)/in4(Low) */
 	GPIO_ResetBits(GPIOE, GPIO_Pin_14);
 	GPIO_SetBits(GPIOE, GPIO_Pin_15);
 }
 
 void _command_backward(void) {
-	/* ¸ğÅÍµå¶óÀÌ¹ö1 Á¦¾î */
-	/* ¿ŞÂÊ ¹ÙÄû : in1(Low)/in2(High) */
+	/* ëª¨í„°ë“œë¼ì´ë²„1 ì œì–´ */
+	/* ì™¼ìª½ ë°”í€´ : in1(Low)/in2(High) */
 	GPIO_ResetBits(GPIOE, GPIO_Pin_0);
 	GPIO_SetBits(GPIOE, GPIO_Pin_1);
-	/* ¿À¸¥ÂÊ ¹ÙÄû : in3(Low)/in4(High) */
+	/* ì˜¤ë¥¸ìª½ ë°”í€´ : in3(Low)/in4(High) */
 	GPIO_ResetBits(GPIOE, GPIO_Pin_2);
 	GPIO_SetBits(GPIOE, GPIO_Pin_3);
 
-	/* ¸ğÅÍµå¶óÀÌ¹ö2 Á¦¾î */
-	/* ¿ŞÂÊ ¹ÙÄû : in1(Low)/in2(High) */
+	/* ëª¨í„°ë“œë¼ì´ë²„2 ì œì–´ */
+	/* ì™¼ìª½ ë°”í€´ : in1(Low)/in2(High) */
 	GPIO_SetBits(GPIOE, GPIO_Pin_4);
 	GPIO_ResetBits(GPIOE, GPIO_Pin_5);
-	/* ¿À¸¥ÂÊ ¹ÙÄû : in3(Low)/in4(High) */
+	/* ì˜¤ë¥¸ìª½ ë°”í€´ : in3(Low)/in4(High) */
 	GPIO_SetBits(GPIOE, GPIO_Pin_14);
 	GPIO_ResetBits(GPIOE, GPIO_Pin_15);
 }
 
 void _command_left(void) {
-	/* ¸ğÅÍµå¶óÀÌ¹ö1ÀÌ ¾ÕÂÊ¹ÙÄû */
+	/* ëª¨í„°ë“œë¼ì´ë²„1ì´ ì•ìª½ë°”í€´ */
 
-	/* ¸ğÅÍµå¶óÀÌ¹ö1 Á¦¾î */
-	/* ¿ŞÂÊ ¹ÙÄû : in1(Low)/in2(High) => ¿ª¹æÇâ */
+	/* ëª¨í„°ë“œë¼ì´ë²„1 ì œì–´ */
+	/* ì™¼ìª½ ë°”í€´ : in1(Low)/in2(High) => ì—­ë°©í–¥ */
 	GPIO_ResetBits(GPIOE, GPIO_Pin_0);
 	GPIO_SetBits(GPIOE, GPIO_Pin_1);
-	/* ¿À¸¥ÂÊ ¹ÙÄû : in3(High)/in4(Low) => Á¤¹æÇâ */
+	/* ì˜¤ë¥¸ìª½ ë°”í€´ : in3(High)/in4(Low) => ì •ë°©í–¥ */
 	GPIO_SetBits(GPIOE, GPIO_Pin_2);
 	GPIO_ResetBits(GPIOE, GPIO_Pin_3);
 
-	/* ¸ğÅÍµå¶óÀÌ¹ö2 Á¦¾î */
-	/* ¿ŞÂÊ ¹ÙÄû : in1(Low)/in2(High) => ¿ª¹æÇâ */
+	/* ëª¨í„°ë“œë¼ì´ë²„2 ì œì–´ */
+	/* ì™¼ìª½ ë°”í€´ : in1(Low)/in2(High) => ì—­ë°©í–¥ */
 	GPIO_ResetBits(GPIOE, GPIO_Pin_4);
 	GPIO_SetBits(GPIOE, GPIO_Pin_5);
-	/* ¿À¸¥ÂÊ ¹ÙÄû : in3(High)/in4(Low) => Á¤¹æÇâ */
+	/* ì˜¤ë¥¸ìª½ ë°”í€´ : in3(High)/in4(Low) => ì •ë°©í–¥ */
 	GPIO_SetBits(GPIOE, GPIO_Pin_14);
 	GPIO_ResetBits(GPIOE, GPIO_Pin_15);
 }
 
 void _command_right(void) {
-	/* ¸ğÅÍµå¶óÀÌ¹ö1ÀÌ ¾ÕÂÊ¹ÙÄû */
+	/* ëª¨í„°ë“œë¼ì´ë²„1ì´ ì•ìª½ë°”í€´ */
 
-	/* ¸ğÅÍµå¶óÀÌ¹ö1 Á¦¾î */
-	/* ¿ŞÂÊ ¹ÙÄû : in1(High)/in2(Low) => Á¤¹æÇâ */
+	/* ëª¨í„°ë“œë¼ì´ë²„1 ì œì–´ */
+	/* ì™¼ìª½ ë°”í€´ : in1(High)/in2(Low) => ì •ë°©í–¥ */
 	GPIO_SetBits(GPIOE, GPIO_Pin_0);
 	GPIO_ResetBits(GPIOE, GPIO_Pin_1);
-	/* ¿À¸¥ÂÊ ¹ÙÄû : in3(Low)/in4(High) => ¿ª¹æÇâ */
+	/* ì˜¤ë¥¸ìª½ ë°”í€´ : in3(Low)/in4(High) => ì—­ë°©í–¥ */
 	GPIO_ResetBits(GPIOE, GPIO_Pin_2);
 	GPIO_SetBits(GPIOE, GPIO_Pin_3);
 
-	/* ¸ğÅÍµå¶óÀÌ¹ö2 Á¦¾î */
-	/* ¿ŞÂÊ ¹ÙÄû : in1(High)/in2(Low) => Á¤¹æÇâ */
+	/* ëª¨í„°ë“œë¼ì´ë²„2 ì œì–´ */
+	/* ì™¼ìª½ ë°”í€´ : in1(High)/in2(Low) => ì •ë°©í–¥ */
 	GPIO_SetBits(GPIOE, GPIO_Pin_4);
 	GPIO_ResetBits(GPIOE, GPIO_Pin_5);
-	/* ¿À¸¥ÂÊ ¹ÙÄû : in3(Low)/in4(High) => ¿ª¹æÇâ */
+	/* ì˜¤ë¥¸ìª½ ë°”í€´ : in3(Low)/in4(High) => ì—­ë°©í–¥ */
 	GPIO_ResetBits(GPIOE, GPIO_Pin_14);
 	GPIO_SetBits(GPIOE, GPIO_Pin_15);
 }
 
 void _command_stop(void) {
-	/* ¸ğÅÍµå¶óÀÌ¹ö1 Á¦¾î */
-	/* ¿ŞÂÊ ¹ÙÄû : in1(Low)/in2(Low) => Á¤Áö
-	 * ¿À¸¥ÂÊ ¹ÙÄû : in3(Low)/in4(Low) => Á¤Áö */
+	/* ëª¨í„°ë“œë¼ì´ë²„1 ì œì–´ */
+	/* ì™¼ìª½ ë°”í€´ : in1(Low)/in2(Low) => ì •ì§€
+	 * ì˜¤ë¥¸ìª½ ë°”í€´ : in3(Low)/in4(Low) => ì •ì§€ */
 	GPIO_ResetBits(GPIOE, GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3);
 
-	/* ¸ğÅÍµå¶óÀÌ¹ö2 Á¦¾î */
-	/* ¿ŞÂÊ ¹ÙÄû : in1(Low)/in2(Low) => Á¤Áö
-	 * ¿À¸¥ÂÊ ¹ÙÄû : in3(Low)/in4(Low) => Á¤Áö */
+	/* ëª¨í„°ë“œë¼ì´ë²„2 ì œì–´ */
+	/* ì™¼ìª½ ë°”í€´ : in1(Low)/in2(Low) => ì •ì§€
+	 * ì˜¤ë¥¸ìª½ ë°”í€´ : in3(Low)/in4(Low) => ì •ì§€ */
 	GPIO_ResetBits(GPIOE, GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_14 | GPIO_Pin_15);
 }
 
 void command_move(int select) {
 	/* Motor Driver Function
-	 *    1) Á¤¹æÇâ : in1(in3) - High / in2(in4) - Low
-	 *    2) ¿ª¹æÇâ : in1(in3) - Low / in2(in4) - High
-	 *    3) Á¤Áö : in1(in3) - High / in2(in4) - High
-	 *    4) Á¤Áö : in1(in3) - Low / in2(in4) - Low */
+	 *    1) ì •ë°©í–¥ : in1(in3) - High / in2(in4) - Low
+	 *    2) ì—­ë°©í–¥ : in1(in3) - Low / in2(in4) - High
+	 *    3) ì •ì§€ : in1(in3) - High / in2(in4) - High
+	 *    4) ì •ì§€ : in1(in3) - Low / in2(in4) - Low */
 	switch(select) {
 	case 0:
 		_command_stop();
@@ -724,12 +725,12 @@ void command_move(int select) {
 }
 
 void change_pwm_servo_duty_cycle(int percentx10) {
-	/* ## PWM ÆÄÇü ÁÖ±â : 50Hz
+	/* ## PWM íŒŒí˜• ì£¼ê¸° : 50Hz
 	 * ## Duty Cycle
-	 *    1) 3.5% : -90µµ
-	 *    2) 7.5% : 0µµ
-	 *    3) 11.5% : 90µµ
-	 * ## PWM Duty Cycle °è»ê => TIM_Pulse = percent * 20,000 / 100 */
+	 *    1) 3.5% : -90ë„
+	 *    2) 7.5% : 0ë„
+	 *    3) 11.5% : 90ë„
+	 * ## PWM Duty Cycle ê³„ì‚° => TIM_Pulse = percent * 20,000 / 100 */
 	TIM_OCInitTypeDef PWM_TIM3Ch3_Init;
 	int pwm_pulse;
 	pwm_pulse = percentx10 * 20000 / 100 / 10;
@@ -741,8 +742,8 @@ void change_pwm_servo_duty_cycle(int percentx10) {
 }
 
 void speed_up_down(int percentx10) {
-	/* ## ¼Óµµ PWM ÆÄÇü ÁÖ±â : 15KHz
-	 * PWM Duty Cycle °è»ê => TIM_Pulse = percent * 200 / 100 */
+	/* ## ì†ë„ PWM íŒŒí˜• ì£¼ê¸° : 15KHz
+	 * PWM Duty Cycle ê³„ì‚° => TIM_Pulse = percent * 200 / 100 */
 	TIM_OCInitTypeDef PWM_TIM3Ch1_Init;
 	int pwm_pulse;
 	pwm_pulse = percentx10 * 20000 / 100 / 10;
@@ -777,7 +778,7 @@ void calculate_accelgyro_average(int total_readnum) {
 }
 
 void set_last_read_angle_data(unsigned long time, float x, float y, float z, float gyro_x, float gyro_y, float gyro_z) {
-	/* °¡¼Óµµ ¼¾¼­ °ªÀ» È°¿ëÇØ Ã³¸®ÇÑ ÃÖÁ¾ °¢µµ °ªÀ» Àü¿ª º¯¼ö¿¡ ÀúÀå */
+	/* ê°€ì†ë„ ì„¼ì„œ ê°’ì„ í™œìš©í•´ ì²˜ë¦¬í•œ ìµœì¢… ê°ë„ ê°’ì„ ì „ì—­ ë³€ìˆ˜ì— ì €ì¥ */
 	last_read_time = time;
 	last_angle_x = x;
 	last_angle_y = y;
@@ -788,14 +789,14 @@ void set_last_read_angle_data(unsigned long time, float x, float y, float z, flo
 }
 
 void PrintAccelGryroRaw2Angle(int16_t accelgyro[6]) {
-	/* 250 degree/s ¹üÀ§¸¦ °¡Áö°í, ÀÌ °ªÀ» 16bit ºĞÇØ´ÉÀ¸·Î Ç¥ÇöÇÏ°í ÀÖÀ¸¹Ç·Î,
-	 * mpu-6050¿¡¼­ º¸³»´Â °ªÀº -32766 ~ +32766 °ªÀÌ´Ù.
-	 * ±×·¯¹Ç·Î ÀÌ °ªÀ» ½ÇÁ¦ 250 degree/s·Î º¯È¯ÇÏ·Á¸é 131·Î ³ª´²Áà¾ß ÇÑ´Ù.
-	 * ¹üÀ§°¡ ´Ù¸£¸é ÀÌ °ªµµ ¹Ù²î¾î¾ß ÇÑ´Ù. */
+	/* 250 degree/s ë²”ìœ„ë¥¼ ê°€ì§€ê³ , ì´ ê°’ì„ 16bit ë¶„í•´ëŠ¥ìœ¼ë¡œ í‘œí˜„í•˜ê³  ìˆìœ¼ë¯€ë¡œ,
+	 * mpu-6050ì—ì„œ ë³´ë‚´ëŠ” ê°’ì€ -32766 ~ +32766 ê°’ì´ë‹¤.
+	 * ê·¸ëŸ¬ë¯€ë¡œ ì´ ê°’ì„ ì‹¤ì œ 250 degree/së¡œ ë³€í™˜í•˜ë ¤ë©´ 131ë¡œ ë‚˜ëˆ ì¤˜ì•¼ í•œë‹¤.
+	 * ë²”ìœ„ê°€ ë‹¤ë¥´ë©´ ì´ ê°’ë„ ë°”ë€Œì–´ì•¼ í•œë‹¤. */
 
 	float FS_SEL = 131;
 
-	/* È¸ÀüÀ» ÇßÀ» ‹š ½Ã°£ ¾Ë±â */
+	/* íšŒì „ì„ í–ˆì„ ë–„ ì‹œê°„ ì•Œê¸° */
 	unsigned long t_now = GetTickCount();
 
 	float gyro_x = (accelgyro[3] - base_gyro_x)/FS_SEL;
@@ -803,17 +804,17 @@ void PrintAccelGryroRaw2Angle(int16_t accelgyro[6]) {
 	float gyro_z = (accelgyro[5] - base_gyro_z)/FS_SEL;
 
 
-	/* °¡¼Óµµ °ª ¹üÀ§´Â 16bitÀÌ±â ¶§¹®¿¡ -32766 ~ + 32766 ¹üÀ§ÀÌ°í,
-	 * +-2g ¹üÀ§ÀÌ¸é mpu-6050À¸·ÎºÎÅÍ ³Ñ¾î¿Â °ªÀ» ½ÇÁ¦ g´ÜÀ§·Î È¯»êÇÏ·Á¸é
-	 * scale factor(16384)·Î ³ª´²¾ß ÇÑ´Ù. +-2g ¹üÀ§´Â +-32766°ªÀÌ´Ù. Áï 32766°©ÀÌ¸é 2°¡ µÈ´Ù. */
+	/* ê°€ì†ë„ ê°’ ë²”ìœ„ëŠ” 16bitì´ê¸° ë•Œë¬¸ì— -32766 ~ + 32766 ë²”ìœ„ì´ê³ ,
+	 * +-2g ë²”ìœ„ì´ë©´ mpu-6050ìœ¼ë¡œë¶€í„° ë„˜ì–´ì˜¨ ê°’ì„ ì‹¤ì œ gë‹¨ìœ„ë¡œ í™˜ì‚°í•˜ë ¤ë©´
+	 * scale factor(16384)ë¡œ ë‚˜ëˆ ì•¼ í•œë‹¤. +-2g ë²”ìœ„ëŠ” +-32766ê°’ì´ë‹¤. ì¦‰ 32766ê°‘ì´ë©´ 2ê°€ ëœë‹¤. */
 
-	//acceleration ¿ø½Ã µ¥ÀÌÅÍ ÀúÀå
+	//acceleration ì›ì‹œ ë°ì´í„° ì €ì¥
 	float accel_x = accelgyro[0];
 	float accel_y = accelgyro[1];
 	float accel_z = accelgyro[2];
 
 
-	//accelerometer·Î ºÎÅÍ °¢µµ ¾ò±â
+	//accelerometerë¡œ ë¶€í„° ê°ë„ ì–»ê¸°
 	float RADIANS_TO_DEGREES = 180/3.14159;
 
 	// float accel_vector_length = sqrt(pow(accel_x,2) + pow(accel_y,2) + pow(accel_z,2));
@@ -822,27 +823,27 @@ void PrintAccelGryroRaw2Angle(int16_t accelgyro[6]) {
 	float accel_angle_z = 0;
 
 
-	//gyro angles °è»ê1
+	//gyro angles ê³„ì‚°1
 	float dt =(t_now - last_read_time)/1000.0;
 	float gyro_angle_x = gyro_x*dt + last_angle_x;
 	float gyro_angle_y = gyro_y*dt + last_angle_y;
 	float gyro_angle_z = gyro_z*dt + last_angle_z;
 
-	//gyro angles °è»ê2
+	//gyro angles ê³„ì‚°2
 	float unfiltered_gyro_angle_x = gyro_x*dt + last_gyro_angle_x;
 	float unfiltered_gyro_angle_y = gyro_y*dt + last_gyro_angle_y;
 	float unfiltered_gyro_angle_z = gyro_z*dt + last_gyro_angle_z;
 
-	//¾ËÆÄ¸¦ ÀÌ¿ëÇØ¼­ ÃÖÁ¾ °¢µµ °è»ê3
+	//ì•ŒíŒŒë¥¼ ì´ìš©í•´ì„œ ìµœì¢… ê°ë„ ê³„ì‚°3
 	float alpha = 0.96;
 	float angle_x = alpha*gyro_angle_x + (1.0 - alpha)*accel_angle_x;
 	float angle_y = alpha*gyro_angle_y + (1.0 - alpha)*accel_angle_y;
-	float angle_z = gyro_angle_z;  //Accelerometer´Â z-angle ¾øÀ½
+	float angle_z = gyro_angle_z;  //AccelerometerëŠ” z-angle ì—†ìŒ
 
-	//ÃÖÁ¾ °¢µµ ÀúÀå
+	//ìµœì¢… ê°ë„ ì €ì¥
 	set_last_read_angle_data(t_now, angle_x, angle_y, angle_z, unfiltered_gyro_angle_x, unfiltered_gyro_angle_y, unfiltered_gyro_angle_z);
 
-	// 2 ¹ÙÀÌÆ® Á¤¼ö·Î º¸³»±â À§ÇØ 100À» °öÇÏ°í, ¹ŞÀ» ¶§, 100À» ³ª´²ÁØ´Ù.
+	// 2 ë°”ì´íŠ¸ ì •ìˆ˜ë¡œ ë³´ë‚´ê¸° ìœ„í•´ 100ì„ ê³±í•˜ê³ , ë°›ì„ ë•Œ, 100ì„ ë‚˜ëˆ ì¤€ë‹¤.
 	//LCD_ShowNum(20,20, (int)accel_angle_x*100,10,BLACK,WHITE);
 	//LCD_ShowNum(20,40, (int)accel_angle_y*100,10,BLACK,WHITE);
 	//LCD_ShowNum(20,60,(int)accel_angle_z*100,10,BLACK,WHITE);
@@ -851,10 +852,10 @@ void PrintAccelGryroRaw2Angle(int16_t accelgyro[6]) {
 	//LCD_ShowNum(20,120,(int)unfiltered_gyro_angle_z*100,10,BLACK,WHITE);
 	if(angle_x > 0) {
 		LCD_ShowString(200, 205, "+", BLACK, WHITE);
-		LCD_ShowNum(210,205,(int)angle_x,2,BLACK,WHITE);		// ½ÇÁúÀûÀ¸·Î ÇÊ¿äÇÑ °æ»ç °¢µµ
+		LCD_ShowNum(210,205,(int)angle_x,2,BLACK,WHITE);		// ì‹¤ì§ˆì ìœ¼ë¡œ í•„ìš”í•œ ê²½ì‚¬ ê°ë„
 	}else {
 		LCD_ShowString(200, 205, "-", BLACK, WHITE);
-		LCD_ShowNum(210,205,(int)(-1)*angle_x,2,BLACK,WHITE);		// ½ÇÁúÀûÀ¸·Î ÇÊ¿äÇÑ °æ»ç °¢µµ
+		LCD_ShowNum(210,205,(int)(-1)*angle_x,2,BLACK,WHITE);		// ì‹¤ì§ˆì ìœ¼ë¡œ í•„ìš”í•œ ê²½ì‚¬ ê°ë„
 	}
 	//LCD_ShowNum(20,160,(int)angle_y,10,BLACK,WHITE);
 	//LCD_ShowNum(20,180,(int)angle_z,10,BLACK,WHITE);
@@ -876,11 +877,11 @@ void UIOutline_Init(void) {
 	LCD_DrawRectangle(5, 200, 235, 315);
 }
 
-/* Todo : °³¹ßÀÚ µğ¹ö±×¿ëÀÌ¹Ç·Î ³ªÁß¿¡ Áö¿ï °Í */
+/* Todo : ê°œë°œì ë””ë²„ê·¸ìš©ì´ë¯€ë¡œ ë‚˜ì¤‘ì— ì§€ìš¸ ê²ƒ */
 //void USART1_IRQHandler(void) {
 //	char recv_data;
 //
-//	/* USART1¿¡¼­ Á¤º¸¸¦ ¹Ş¾Æ Ãâ·ÂÇÑ´Ù.(ºí·çÅõ½º ¼¼ÆÃ ¿ëµµ & ¾Èµå·ÎÀÌµå ¾îÇÃ·Î ¼Û½Å) */
+//	/* USART1ì—ì„œ ì •ë³´ë¥¼ ë°›ì•„ ì¶œë ¥í•œë‹¤.(ë¸”ë£¨íˆ¬ìŠ¤ ì„¸íŒ… ìš©ë„ & ì•ˆë“œë¡œì´ë“œ ì–´í”Œë¡œ ì†¡ì‹ ) */
 //	if (USART_GetITStatus(USART1, USART_IT_RXNE) != RESET) {
 //		recv_data = USART_ReceiveData(USART1);
 //
@@ -897,7 +898,7 @@ void UIOutline_Init(void) {
 void USART1_IRQHandler(void) {
 	char recv_data;
 
-	/* ¾Èµå·ÎÀÌµå ¾îÇÃ¸®ÄÉÀÌ¼Ç¿¡¼­ º¸³»´Â ¹®ÀÚ¿­ ¸í·ÉÀ» ¹Ş¾Æ¼­ ¸í·É¾îº°·Î Ã³¸®ÇÏ´Â ÀÎÅÍ·´Æ® */
+	/* ì•ˆë“œë¡œì´ë“œ ì–´í”Œë¦¬ì¼€ì´ì…˜ì—ì„œ ë³´ë‚´ëŠ” ë¬¸ìì—´ ëª…ë ¹ì„ ë°›ì•„ì„œ ëª…ë ¹ì–´ë³„ë¡œ ì²˜ë¦¬í•˜ëŠ” ì¸í„°ëŸ½íŠ¸ */
 	/* Command End : "\n"
 	   Command List : "FORWARD", "BACKWARD", "LEFT", "RIGHT", "STOP", "ON", "OFF"
 	   Optional Command List : "LIGHT_ON", "LIGHT_OFF", "TEMPER_UP", "TEMPER_DOWN", "WIPER_ON", "WIPER_OFF"
@@ -948,7 +949,7 @@ void USART1_IRQHandler(void) {
 void USART2_IRQHandler(void) {
 	char recv_data;
 
-	/* ¾Èµå·ÎÀÌµå ¾îÇÃ¸®ÄÉÀÌ¼Ç¿¡¼­ º¸³»´Â ¹®ÀÚ¿­ ¸í·ÉÀ» ¹Ş¾Æ¼­ ¸í·É¾îº°·Î Ã³¸®ÇÏ´Â ÀÎÅÍ·´Æ® */
+	/* ì•ˆë“œë¡œì´ë“œ ì–´í”Œë¦¬ì¼€ì´ì…˜ì—ì„œ ë³´ë‚´ëŠ” ë¬¸ìì—´ ëª…ë ¹ì„ ë°›ì•„ì„œ ëª…ë ¹ì–´ë³„ë¡œ ì²˜ë¦¬í•˜ëŠ” ì¸í„°ëŸ½íŠ¸ */
 	/* Command End : "\n"
 	   Command List : "FORWARD", "BACKWARD", "LEFT", "RIGHT", "STOP", "ON", "OFF"
 	   Optional Command List : "LIGHT_ON", "LIGHT_OFF", "TEMPER_UP", "TEMPER_DOWN", "WIPER_ON", "WIPER_OFF"
@@ -995,9 +996,9 @@ void USART2_IRQHandler(void) {
 void USART3_IRQHandler(void) {
 	char voice_command;
 
-	/* USART3¿¡¼­ Á¤º¸¸¦ ¹Ş¾Æ Ãâ·ÂÇÑ´Ù.(À½¼ºÀÎ½Ä¼¾¼­¿¡¼­ °ªÀ» ¹Ş¾Æ PC·Î Àü¼Û)
-	 *    1) voice_command : À½¼ºÀÎ½Ä¼¾¼­°¡ ¸í·É¾î¸¦ ÀÎ½ÄÇÏ¸é ¸®ÅÏ °ªÀ» ¹İÈ¯
-	 *    2) ¸®ÅÏ °ª¿¡ µû¶ó voiceBuffer¿¡ ÀúÀåµÈ ¸í·É¾î¸¦ ÀÎ½Ä */
+	/* USART3ì—ì„œ ì •ë³´ë¥¼ ë°›ì•„ ì¶œë ¥í•œë‹¤.(ìŒì„±ì¸ì‹ì„¼ì„œì—ì„œ ê°’ì„ ë°›ì•„ PCë¡œ ì „ì†¡)
+	 *    1) voice_command : ìŒì„±ì¸ì‹ì„¼ì„œê°€ ëª…ë ¹ì–´ë¥¼ ì¸ì‹í•˜ë©´ ë¦¬í„´ ê°’ì„ ë°˜í™˜
+	 *    2) ë¦¬í„´ ê°’ì— ë”°ë¼ voiceBufferì— ì €ì¥ëœ ëª…ë ¹ì–´ë¥¼ ì¸ì‹ */
 	if (USART_GetITStatus(USART3, USART_IT_RXNE) != RESET) {
 		voice_command = USART_ReceiveData(USART3);
 
@@ -1016,13 +1017,13 @@ void USART3_IRQHandler(void) {
 
 void TIM2_IRQHandler(void) {
 	if(TIM_GetITStatus(TIM2, TIM_IT_Update) != RESET) {
-		/* ## rain_power_flag : ºø¹°ÀÇ ¼¼±â
-		 *    1) 0 : ºñ ¾È¿È
-		 *    2) 1 : ºñ ¾àÇÔ
-		 *    3) 2 : ºñ °­ÇÔ
-		 * ## servo_direction : ¼­º¸¸ğÅÍ ¹æÇâ Á¶Àı ÇÃ·¡±× */
+		/* ## rain_power_flag : ë¹—ë¬¼ì˜ ì„¸ê¸°
+		 *    1) 0 : ë¹„ ì•ˆì˜´
+		 *    2) 1 : ë¹„ ì•½í•¨
+		 *    3) 2 : ë¹„ ê°•í•¨
+		 * ## servo_direction : ì„œë³´ëª¨í„° ë°©í–¥ ì¡°ì ˆ í”Œë˜ê·¸ */
 
-		/* ºñÀÇ ¼¼±â°¡ ¾àÇÒ ¶§ : 1ÃÊ °£°İÀ¸·Î µ¿ÀÛ */
+		/* ë¹„ì˜ ì„¸ê¸°ê°€ ì•½í•  ë•Œ : 1ì´ˆ ê°„ê²©ìœ¼ë¡œ ë™ì‘ */
 		if(rain_power_flag == 1) {
 			if(timer_count % 2 == 0) {
 				if(servo_direction == 1) {
@@ -1037,7 +1038,7 @@ void TIM2_IRQHandler(void) {
 			}
 			timer_count++;
 
-		/* ºñÀÇ ¼¼±â°¡ °­ÇÒ ¶§ : 0.5ÃÊ °£°İÀ¸·Î µ¿ÀÛ */
+		/* ë¹„ì˜ ì„¸ê¸°ê°€ ê°•í•  ë•Œ : 0.5ì´ˆ ê°„ê²©ìœ¼ë¡œ ë™ì‘ */
 		}else if(rain_power_flag == 2) {
 			if(servo_direction == 1) {
 				change_pwm_servo_duty_cycle(35);
@@ -1071,7 +1072,7 @@ void TIM2_IRQHandler(void) {
 
 void TIM1_IRQHandler(void) {
 	if(TIM_GetITStatus(TIM1, TIM_IT_Update) != RESET) {
-		/* TickCount °ªÀ» 1¾¿ Áõ°¡½ÃÅ°¸é¼­ g_currentTick¿¡ ÀúÀå */
+		/* TickCount ê°’ì„ 1ì”© ì¦ê°€ì‹œí‚¤ë©´ì„œ g_currentTickì— ì €ì¥ */
 		g_currentTick++;
 		TIM_ClearITPendingBit(TIM1, TIM_IT_Update);		// clear interrupt flag
 	}
