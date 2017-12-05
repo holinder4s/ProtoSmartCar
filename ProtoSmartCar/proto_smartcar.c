@@ -61,6 +61,8 @@ float last_gyro_angle_x, last_gyro_angle_y, last_gyro_angle_z;
 /* 현재 Tick Count값을 저장하는 전역변수 */
 uint32_t g_currentTick = 0;
 
+int speed_updown_timer_count = 0;
+
 void RCC_Configure(void);
 void USART_Configure(void);
 void _GPIO_LEDInit(void);
@@ -68,11 +70,11 @@ void _GPIO_MOTOR1Init(void);
 void _GPIO_MOTOR2Init(void);
 void _GPIO_MOTORInit(void);
 void _GPIO_ADCInit(void);
-void _GPIO_TIM3Ch3Init(void);
+void _GPIO_TIM3Ch3Ch1Init(void);
 void GPIO_Configure(void);
 void ADC_Configure(void);
 void ADC_Initialize(void);
-void _TIM3Ch3_PWM_Configure(void);
+void _TIM3Ch3Ch1_PWM_Configure(void);
 void _TIM2_Configure(void);
 void TIM_PWM_Configure(void);
 void DMA_Configure(void);
@@ -87,6 +89,7 @@ void _command_right(void);
 void _command_stop(void);
 void command_move(int select);
 void change_pwm_servo_duty_cycle(int percentx10);
+void speed_up_down(int percentx10);
 void AccelGyroInitialize(void);
 void calculate_accelgyro_average(int total_readnum);
 void set_last_read_angle_data(unsigned long time, float x, float y, float z, float gyro_x, float gyro_y, float gyro_z);
@@ -131,7 +134,6 @@ int main(void) {
 
 	/* Debug용 : 나중에 삭제할 것! */
 	GPIO_ResetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
-
 	while (1) {
 		/* 조도센서 값 LCD에 출력
 		 *    1) x > 3000 : 밤(어두움)
@@ -191,17 +193,25 @@ int main(void) {
 		//LCD_ShowNum(20,140,(int)dew_point,10,BLACK,WHITE);
 
 		/* MPU6050 6축 자이로 가속도 센서 사용
-		 *    1) 경사 측정 : raw sensor데이터를 받아 각도 계산  */
+		 *    1) 경사 측정 : raw sensor데이터를 받아 각도 계산
+		 *    2) 20도 이상 : DC 모터 출력 60%(속도 향상)
+		 *    3) 40도 이상 : DC 모터 출력 70%(속도 향상)
+		 *    4) -20도 ~ 20도 : DC 모터 출력 50%(평균 속도)
+		 *    5) -20도 이하 : DC 모터 출력 40%(속도 저하)
+		 *    6) -40도 이하 : DC 모터 출력 30%(속도 저하) */
 		if (MPU6050_TestConnection() != 0) {
 			if(AccelGyroAverage_flag == true) {
-				AccelGyroInitialize();
-				calculate_accelgyro_average(10);
-				AccelGyroAverage_flag = false;
+//				AccelGyroInitialize();
+//				calculate_accelgyro_average(10);
+//				AccelGyroAverage_flag = false;
 			}else {
-				/* Sensor로부터 데이터 받아오기 */
-				MPU6050_GetRawAccelGyro(AccelGyro);
-				/* 센서 raw데이터를 각도로 가공 및 출력 */
-				PrintAccelGryroRaw2Angle(AccelGyro);
+//				/* Sensor로부터 데이터 받아오기 */
+//				MPU6050_GetRawAccelGyro(AccelGyro);
+//				/* 센서 raw데이터를 각도로 가공 및 출력 */
+//				PrintAccelGryroRaw2Angle(AccelGyro);
+//
+//				/* 경사각측정과 DC모터 속도 제어를 통해 차량 속도를 유지 */
+//				/* 1초마다 TIM2 Interrupt Handler에서 속도 제어 */
 			}
 		}
 	}
@@ -219,7 +229,7 @@ void RCC_Configure(void) {
 
 	/* 모터드라이버
 	 *    1) 모터드라이버1(in1:PB8,in2:PB9,in3:PB14,in4:PB15)
-	 *    2) 모터드라이버2(in1:PE4,in2:PE5,in3:PB10,in4:PE15)  */
+	 *    2) 모터드라이버2(in1:PE4,in2:PE5,in3:PE14,in4:PE15)  */
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOE, ENABLE);
 
@@ -230,7 +240,8 @@ void RCC_Configure(void) {
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1,ENABLE);
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1,ENABLE);
 
-	/* Servo Motor를 제어하기 위한 TIM3_Channel3 사용 */
+	/* Servo Motor를 제어하기 위한 TIM3_Channel3(PB0) 사용 */
+	/* 바퀴 속도 제어(PWM)를 위한 TIM3_Channel1(PA6) 사용 */
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
 
 	/* 와이퍼 작동시 주기 설정을 위한 TIM2 사용 */
@@ -354,26 +365,25 @@ void _GPIO_MOTOR1Init(void) {
 }
 
 void _GPIO_MOTOR2Init(void) {
-	GPIO_InitTypeDef GPIOBE_MOTOR2_init;
+	GPIO_InitTypeDef GPIOE_MOTOR2_init;
 
-	GPIOBE_MOTOR2_init.GPIO_Mode = GPIO_Mode_Out_PP;
-	GPIOBE_MOTOR2_init.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIOE_MOTOR2_init.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIOE_MOTOR2_init.GPIO_Speed = GPIO_Speed_50MHz;
 
-	GPIOBE_MOTOR2_init.GPIO_Pin = GPIO_Pin_4;
-	GPIO_Init(GPIOE, &GPIOBE_MOTOR2_init);
+	GPIOE_MOTOR2_init.GPIO_Pin = GPIO_Pin_4;
+	GPIO_Init(GPIOE, &GPIOE_MOTOR2_init);
 
-	GPIOBE_MOTOR2_init.GPIO_Pin = GPIO_Pin_5;
-	GPIO_Init(GPIOE, &GPIOBE_MOTOR2_init);
+	GPIOE_MOTOR2_init.GPIO_Pin = GPIO_Pin_5;
+	GPIO_Init(GPIOE, &GPIOE_MOTOR2_init);
 
-	GPIOBE_MOTOR2_init.GPIO_Pin = GPIO_Pin_10;
-	GPIO_Init(GPIOB, &GPIOBE_MOTOR2_init);
+	GPIOE_MOTOR2_init.GPIO_Pin = GPIO_Pin_14;
+	GPIO_Init(GPIOE, &GPIOE_MOTOR2_init);
 
-	GPIOBE_MOTOR2_init.GPIO_Pin = GPIO_Pin_15;
-	GPIO_Init(GPIOE, &GPIOBE_MOTOR2_init);
+	GPIOE_MOTOR2_init.GPIO_Pin = GPIO_Pin_15;
+	GPIO_Init(GPIOE, &GPIOE_MOTOR2_init);
 
 	/* 모터 정지 모드로 초기화 */
-	GPIO_ResetBits(GPIOB, GPIO_Pin_10);
-	GPIO_ResetBits(GPIOE, GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_15);
+	GPIO_ResetBits(GPIOE, GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_14 | GPIO_Pin_15);
 }
 
 void _GPIO_MOTORInit(void) {
@@ -392,14 +402,21 @@ void _GPIO_ADCInit(void){
 	GPIO_Init(GPIOC, &GPIOC_ADC_init);
 }
 
-void _GPIO_TIM3Ch3Init(void) {
-	/* TIM3 Channel 3 : GPIOB Pin 0(Alternative Function) */
-	GPIO_InitTypeDef GPIOB_TIM3Ch3_init;
+void _GPIO_TIM3Ch3Ch1Init(void) {
+	/* TIM3 Channel 3 : GPIOB Pin 0(Alternative Function)
+	 * TIM3 Channel 1 : GPIOA Pin 6(Alternative Function) */
+	GPIO_InitTypeDef GPIOB_TIM3Ch3Ch1_init;
 
-	GPIOB_TIM3Ch3_init.GPIO_Mode = GPIO_Mode_AF_PP;
-	GPIOB_TIM3Ch3_init.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIOB_TIM3Ch3_init.GPIO_Pin = GPIO_Pin_0;
-	GPIO_Init(GPIOB, &GPIOB_TIM3Ch3_init);
+	GPIOB_TIM3Ch3Ch1_init.GPIO_Mode = GPIO_Mode_AF_PP;
+	GPIOB_TIM3Ch3Ch1_init.GPIO_Speed = GPIO_Speed_50MHz;
+
+	/* 와이퍼 각도 제어 : TIM3_Channel3(PB0) GPIO 초기화 */
+	GPIOB_TIM3Ch3Ch1_init.GPIO_Pin = GPIO_Pin_0;
+	GPIO_Init(GPIOB, &GPIOB_TIM3Ch3Ch1_init);
+
+	/* DC모터 속도 제어 : TIM3_Channel1(PA6) GPIO 초기화 */
+	GPIOB_TIM3Ch3Ch1_init.GPIO_Pin = GPIO_Pin_6;
+	GPIO_Init(GPIOA, &GPIOB_TIM3Ch3Ch1_init);
 }
 
 void GPIO_Configure(void) {
@@ -407,7 +424,7 @@ void GPIO_Configure(void) {
 	_GPIO_LEDInit();
 	_GPIO_MOTORInit();
 	_GPIO_ADCInit();
-	_GPIO_TIM3Ch3Init();
+	_GPIO_TIM3Ch3Ch1Init();
 }
 
 void ADC_Configure(void){
@@ -440,27 +457,34 @@ void ADC_Initialize(void){
 	ADC_SoftwareStartConvCmd(ADC1,ENABLE);
 }
 
-void _TIM3Ch3_PWM_Configure(void) {
+void _TIM3Ch3Ch1_PWM_Configure(void) {
 	/* 기본 System Clock : 72MHz
 	 * Prescale = 72MHz / 1MHz - 1 = 71 => 72MHz를 1MHz Timer clock으로 세팅
 	 * TIM_Period = 1MHz / 50Hz = 20,000 => 1MHz Timer Clock을 20,000주기를 통해 50Hz 주기로 세팅 */
-	TIM_TimeBaseInitTypeDef TIM3Ch3_Init;
+	TIM_TimeBaseInitTypeDef TIM3Ch3Ch1_Init;
+
+	TIM_OCInitTypeDef PWM_TIM3Ch3Ch1_Init;
+
+	TIM3Ch3Ch1_Init.TIM_Prescaler = (uint16_t)(SystemCoreClock / 1000000) - 1;
+	TIM3Ch3Ch1_Init.TIM_Period = 20000 - 1;
+	TIM3Ch3Ch1_Init.TIM_ClockDivision = 0;
+	TIM3Ch3Ch1_Init.TIM_CounterMode = TIM_CounterMode_Down;
+	TIM_TimeBaseInit(TIM3, &TIM3Ch3Ch1_Init);
+
+	PWM_TIM3Ch3Ch1_Init.TIM_OCMode = TIM_OCMode_PWM1;
+	PWM_TIM3Ch3Ch1_Init.TIM_OCPolarity = TIM_OCPolarity_High;
+	PWM_TIM3Ch3Ch1_Init.TIM_OutputState = TIM_OutputState_Enable;
 
 	/* Servo Moter 0도 : 7.5% Duty Cycle을 초기 값으로 PWM mode 설정 */
-	TIM_OCInitTypeDef PWM_TIM3Ch3_Init;
-
-	TIM3Ch3_Init.TIM_Prescaler = (uint16_t)(SystemCoreClock / 1000000) - 1;
-	TIM3Ch3_Init.TIM_Period = 20000 - 1;
-	TIM3Ch3_Init.TIM_ClockDivision = 0;
-	TIM3Ch3_Init.TIM_CounterMode = TIM_CounterMode_Down;
-	TIM_TimeBaseInit(TIM3, &TIM3Ch3_Init);
-
-	PWM_TIM3Ch3_Init.TIM_OCMode = TIM_OCMode_PWM1;
-	PWM_TIM3Ch3_Init.TIM_OCPolarity = TIM_OCPolarity_High;
-	PWM_TIM3Ch3_Init.TIM_OutputState = TIM_OutputState_Enable;
-	PWM_TIM3Ch3_Init.TIM_Pulse = 1500;		// 50% duty cycle value
-	TIM_OC3Init(TIM3, &PWM_TIM3Ch3_Init);
+	/* 서보 모터 각도 제어 : 초기 duty cycle을 7.5%로 초기화 */
+	PWM_TIM3Ch3Ch1_Init.TIM_Pulse = 1500;
+	TIM_OC3Init(TIM3, &PWM_TIM3Ch3Ch1_Init);
 	TIM_OC3PreloadConfig(TIM3, TIM_OCPreload_Disable);
+
+	/* DC 모터 속도 제어 : 초기 duty cycle을 50%로 초기화 */
+	PWM_TIM3Ch3Ch1_Init.TIM_Pulse = 10000;
+	TIM_OC1Init(TIM3, &PWM_TIM3Ch3Ch1_Init);
+	TIM_OC1PreloadConfig(TIM3, TIM_OCPreload_Disable);
 
 	TIM_ARRPreloadConfig(TIM3, ENABLE);
 	TIM_Cmd(TIM3, ENABLE);
@@ -501,7 +525,7 @@ void _TIM1_Configure(void) {
 }
 
 void TIM_PWM_Configure(void){
-	_TIM3Ch3_PWM_Configure();
+	_TIM3Ch3Ch1_PWM_Configure();
 	_TIM2_Configure();
 	_TIM1_Configure();
 }
@@ -583,11 +607,11 @@ void _command_forward(void) {
 
 	/* 모터드라이버2 제어 */
 	/* 왼쪽 바퀴 : in1(High)/in2(Low) */
-	GPIO_SetBits(GPIOE, GPIO_Pin_4);
-	GPIO_ResetBits(GPIOE, GPIO_Pin_5);
+	GPIO_ResetBits(GPIOE, GPIO_Pin_4);
+	GPIO_SetBits(GPIOE, GPIO_Pin_5);
 	/* 오른쪽 바퀴 : in3(High)/in4(Low) */
-	GPIO_SetBits(GPIOB, GPIO_Pin_10);
-	GPIO_ResetBits(GPIOE, GPIO_Pin_15);
+	GPIO_ResetBits(GPIOE, GPIO_Pin_14);
+	GPIO_SetBits(GPIOE, GPIO_Pin_15);
 }
 
 void _command_backward(void) {
@@ -601,11 +625,11 @@ void _command_backward(void) {
 
 	/* 모터드라이버2 제어 */
 	/* 왼쪽 바퀴 : in1(Low)/in2(High) */
-	GPIO_ResetBits(GPIOE, GPIO_Pin_4);
-	GPIO_SetBits(GPIOE, GPIO_Pin_5);
+	GPIO_SetBits(GPIOE, GPIO_Pin_4);
+	GPIO_ResetBits(GPIOE, GPIO_Pin_5);
 	/* 오른쪽 바퀴 : in3(Low)/in4(High) */
-	GPIO_ResetBits(GPIOB, GPIO_Pin_10);
-	GPIO_SetBits(GPIOE, GPIO_Pin_15);
+	GPIO_SetBits(GPIOE, GPIO_Pin_14);
+	GPIO_ResetBits(GPIOE, GPIO_Pin_15);
 }
 
 void _command_left(void) {
@@ -624,7 +648,7 @@ void _command_left(void) {
 	GPIO_ResetBits(GPIOE, GPIO_Pin_4);
 	GPIO_SetBits(GPIOE, GPIO_Pin_5);
 	/* 오른쪽 바퀴 : in3(High)/in4(Low) => 정방향 */
-	GPIO_SetBits(GPIOB, GPIO_Pin_10);
+	GPIO_SetBits(GPIOE, GPIO_Pin_14);
 	GPIO_ResetBits(GPIOE, GPIO_Pin_15);
 }
 
@@ -644,7 +668,7 @@ void _command_right(void) {
 	GPIO_SetBits(GPIOE, GPIO_Pin_4);
 	GPIO_ResetBits(GPIOE, GPIO_Pin_5);
 	/* 오른쪽 바퀴 : in3(Low)/in4(High) => 역방향 */
-	GPIO_ResetBits(GPIOB, GPIO_Pin_10);
+	GPIO_ResetBits(GPIOE, GPIO_Pin_14);
 	GPIO_SetBits(GPIOE, GPIO_Pin_15);
 }
 
@@ -657,8 +681,7 @@ void _command_stop(void) {
 	/* 모터드라이버2 제어 */
 	/* 왼쪽 바퀴 : in1(Low)/in2(Low) => 정지
 	 * 오른쪽 바퀴 : in3(Low)/in4(Low) => 정지 */
-	GPIO_ResetBits(GPIOE, GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_15);
-	GPIO_ResetBits(GPIOB, GPIO_Pin_10);
+	GPIO_ResetBits(GPIOE, GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_14 | GPIO_Pin_15);
 }
 
 void command_move(int select) {
@@ -703,6 +726,19 @@ void change_pwm_servo_duty_cycle(int percentx10) {
 	PWM_TIM3Ch3_Init.TIM_OutputState = TIM_OutputState_Enable;
 	PWM_TIM3Ch3_Init.TIM_Pulse = pwm_pulse;
 	TIM_OC3Init(TIM3, &PWM_TIM3Ch3_Init);
+}
+
+void speed_up_down(int percentx10) {
+	/* ## 속도 PWM 파형 주기 : 15KHz
+	 * PWM Duty Cycle 계산 => TIM_Pulse = percent * 200 / 100 */
+	TIM_OCInitTypeDef PWM_TIM3Ch1_Init;
+	int pwm_pulse;
+	pwm_pulse = percentx10 * 20000 / 100 / 10;
+	PWM_TIM3Ch1_Init.TIM_OCMode = TIM_OCMode_PWM1;
+	PWM_TIM3Ch1_Init.TIM_OCPolarity = TIM_OCPolarity_High;
+	PWM_TIM3Ch1_Init.TIM_OutputState = TIM_OutputState_Enable;
+	PWM_TIM3Ch1_Init.TIM_Pulse = pwm_pulse;
+	TIM_OC1Init(TIM3, &PWM_TIM3Ch1_Init);
 }
 
 void AccelGyroInitialize(void) {
@@ -791,7 +827,6 @@ void PrintAccelGryroRaw2Angle(int16_t accelgyro[6]) {
 	float angle_y = alpha*gyro_angle_y + (1.0 - alpha)*accel_angle_y;
 	float angle_z = gyro_angle_z;  //Accelerometer는 z-angle 없음
 
-
 	//최종 각도 저장
 	set_last_read_angle_data(t_now, angle_x, angle_y, angle_z, unfiltered_gyro_angle_x, unfiltered_gyro_angle_y, unfiltered_gyro_angle_z);
 
@@ -802,7 +837,13 @@ void PrintAccelGryroRaw2Angle(int16_t accelgyro[6]) {
 	//LCD_ShowNum(20,80,(int)unfiltered_gyro_angle_x*100,10,BLACK,WHITE);
 	//LCD_ShowNum(20,100,(int)unfiltered_gyro_angle_y*100,10,BLACK,WHITE);
 	//LCD_ShowNum(20,120,(int)unfiltered_gyro_angle_z*100,10,BLACK,WHITE);
-	LCD_ShowNum(20,140,(int)angle_x,10,BLACK,WHITE);		// 실질적으로 필요한 경사 각도
+	if(angle_x > 0) {
+		LCD_ShowString(200, 205, "+", BLACK, WHITE);
+		LCD_ShowNum(210,205,(int)angle_x,2,BLACK,WHITE);		// 실질적으로 필요한 경사 각도
+	}else {
+		LCD_ShowString(200, 205, "-", BLACK, WHITE);
+		LCD_ShowNum(210,205,(int)(-1)*angle_x,2,BLACK,WHITE);		// 실질적으로 필요한 경사 각도
+	}
 	//LCD_ShowNum(20,160,(int)angle_y,10,BLACK,WHITE);
 	//LCD_ShowNum(20,180,(int)angle_z,10,BLACK,WHITE);
 }
@@ -824,20 +865,71 @@ void UIOutline_Init(void) {
 }
 
 /* Todo : 개발자 디버그용이므로 나중에 지울 것 */
+//void USART1_IRQHandler(void) {
+//	char recv_data;
+//
+//	/* USART1에서 정보를 받아 출력한다.(블루투스 세팅 용도 & 안드로이드 어플로 송신) */
+//	if (USART_GetITStatus(USART1, USART_IT_RXNE) != RESET) {
+//		recv_data = USART_ReceiveData(USART1);
+//
+//		if(recv_data) {
+//			//USART_SendData(USART1, recv_data);								// wjdebug
+//			//while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET);		// wjdebug
+//			USART_SendData(USART2, recv_data);
+//			while (USART_GetFlagStatus(USART2, USART_FLAG_TXE) == RESET);
+//			USART_ClearITPendingBit(USART1, USART_IT_RXNE);
+//		}
+//	}
+//}
+
 void USART1_IRQHandler(void) {
 	char recv_data;
 
-	/* USART1에서 정보를 받아 출력한다.(블루투스 세팅 용도 & 안드로이드 어플로 송신) */
+	/* 안드로이드 어플리케이션에서 보내는 문자열 명령을 받아서 명령어별로 처리하는 인터럽트 */
+	/* Command End : "\n"
+	   Command List : "FORWARD", "BACKWARD", "LEFT", "RIGHT", "STOP", "ON", "OFF"
+	   Optional Command List : "LIGHT_ON", "LIGHT_OFF", "TEMPER_UP", "TEMPER_DOWN", "WIPER_ON", "WIPER_OFF"
+	*/
 	if (USART_GetITStatus(USART1, USART_IT_RXNE) != RESET) {
 		recv_data = USART_ReceiveData(USART1);
 
-		if(recv_data) {
-			//USART_SendData(USART1, recv_data);								// wjdebug
-			//while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET);		// wjdebug
-			USART_SendData(USART2, recv_data);
-			while (USART_GetFlagStatus(USART2, USART_FLAG_TXE) == RESET);
-			USART_ClearITPendingBit(USART1, USART_IT_RXNE);
+		if(recv_data == '!') {
+			if(strstr(command, "CLEAR") != NULL) {
+				GPIO_ResetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
+			}else if(strstr(command, "POWERON") != NULL) {
+				//GPIO_SetBits(GPIOD, GPIO_Pin_2);
+				//speed_up_down(600);
+				//UIOutline_Init();
+			}else if(strstr(command, "POWEROFF") != NULL) {
+				//GPIO_ResetBits(GPIOD, GPIO_Pin_2);
+				//speed_up_down(400);
+				//LCD_Clear(BLACK);
+			}else if(strstr(command, "FORWARD") != NULL) {
+				GPIO_SetBits(GPIOD, GPIO_Pin_3);
+				//speed_up_down(500);
+				command_move(1);
+			}else if(strstr(command, "BACKWARD") != NULL) {
+				GPIO_SetBits(GPIOD, GPIO_Pin_2);
+				//GPIO_SetBits(GPIOD, GPIO_Pin_4);
+				command_move(2);
+			}else if(strstr(command, "LEFT") != NULL) {
+				//GPIO_SetBits(GPIOD, GPIO_Pin_4);
+				command_move(3);
+			}else if(strstr(command, "RIGHT") != NULL) {
+				//GPIO_SetBits(GPIOD, GPIO_Pin_7);
+				command_move(4);
+			}else if(strstr(command, "STOP") != NULL) {
+				GPIO_ResetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
+				command_move(0);
+			}
+			command_pos = 0;
+			memset(command, 0x00, 100);
+		}else {
+			command[command_pos++] = recv_data;
+			USART_SendData(USART1, recv_data);								// wjdebug
+			while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET);		// wjdebug
 		}
+		USART_ClearITPendingBit(USART1, USART_IT_RXNE);
 	}
 }
 
@@ -944,6 +1036,23 @@ void TIM2_IRQHandler(void) {
 				servo_direction = 1;
 			}
 		}
+
+//		if(speed_updown_timer_count % 2 == 0) {
+//			if((int)last_angle_x >= 40) {
+//				speed_up_down(700);
+//			}else if((int)last_angle_x >= 20) {
+//				speed_up_down(600);
+//			}else if((int)last_angle_x <= (-1)*40) {
+//				speed_up_down(300);
+//			}else if((int)last_angle_x <= (-1)*20) {
+//				speed_up_down(400);
+//			}else {
+//				speed_up_down(500);
+//			}
+//			speed_updown_timer_count = speed_updown_timer_count % 2;
+//		}
+//		speed_updown_timer_count++;
+
 		TIM_ClearITPendingBit(TIM2, TIM_IT_Update);		// clear interrupt flag
 	}
 }
