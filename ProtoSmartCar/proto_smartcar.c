@@ -17,6 +17,7 @@
 #include <lcd.h>
 #include <Touch.h>
 #include <SHT15.h>
+#include <DHT11.h>
 #include <MPU6050.h>
 #include <stdbool.h>
 #include <math.h>
@@ -165,6 +166,9 @@ int main(void) {
 	/* HC-SR04 초음파 거리센서 초기화 */
 	UltraDistance_Init();
 
+	/* DHT11 온습도 센서 초기화 */
+	//DHT11_Init();
+
 	/* 메인 UI틀 초기화 */
 	LCD_Clear(WHITE);
 	UIOutline_Init();
@@ -257,13 +261,16 @@ int main(void) {
 			}
 		}
 
-		/* DHT11 온습도센서 */
-
 		/* HC-SR04 초음파 거리센서 : 앞에 장애물이 있을 경우 멈춤. */
 		distance = getDistance();
 		LCD_ShowNum(190,285, distance, 5, BLACK, WHITE);
 		if(distance <= 2500)
 			command_move(0);
+
+		/* DHT11 온습도센서 */
+		//DHT11_Read_Data(&temperature,&humidity);
+		//LCD_ShowNum(150,225, temperature, 2, BLACK, WHITE);
+		//LCD_ShowNum(150,225, humidity, 2, BLACK, WHITE);
 	}
 }
 

@@ -3,6 +3,28 @@
 #include <stm32f10x_gpio.h>
 #include <stm32f10x_rcc.h>
       
+void DHT11_IO_IN(void) {
+	GPIO_InitTypeDef  GPIO_InitStructure;
+
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOE, ENABLE);
+
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(GPIOE, &GPIO_InitStructure);
+}
+
+void DHT11_IO_OUT(void) {
+	GPIO_InitTypeDef  GPIO_InitStructure;
+
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOE, ENABLE);
+
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(GPIOE, &GPIO_InitStructure);
+}
+
 //Reset DHT11
 void DHT11_Rst(void)	   
 {                 
@@ -95,13 +117,13 @@ u8 DHT11_Init(void)
 {	 
  	GPIO_InitTypeDef  GPIO_InitStructure;
  	
- 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);	 
+ 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOE, ENABLE);
 	
- 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;				 
+ 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7;
  	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP; 		 
  	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
- 	GPIO_Init(GPIOG, &GPIO_InitStructure);				 
- 	GPIO_SetBits(GPIOA,GPIO_Pin_0);						 
+ 	GPIO_Init(GPIOE, &GPIO_InitStructure);
+ 	GPIO_SetBits(GPIOE,GPIO_Pin_7);
 			    
 	DHT11_Rst();  
 	return DHT11_Check();

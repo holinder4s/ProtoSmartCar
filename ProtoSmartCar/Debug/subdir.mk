@@ -4,14 +4,10 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../DHT11.c \
-../delay.c \
 ../proto_smartcar.c \
 ../usart.c 
 
 OBJS += \
-./DHT11.o \
-./delay.o \
 ./proto_smartcar.o \
 ./usart.o 
 
