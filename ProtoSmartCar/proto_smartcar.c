@@ -39,7 +39,8 @@
  *    10) AccelGyroAverage_flag : true이면 average계산 모드(초기화), false이면 정상 동작
  *    11) base_???_? : 가속도 센서 Raw 데이터 평균 값
  *    12) last_???_??? : 최신 가속도 센서 가공 값
- *    13) g_currentTick : TickCount값 => 시간 계산을 위해 이용(1msec)*/
+ *    13) g_currentTick : TickCount값 => 시간 계산을 위해 이용(1msec)
+ *    14) speed_updown_timer_count : 속도 변조를 1초마다 하기위해 세팅 */
 __IO uint32_t ADC_result_value_arr[3];
 char command[100];
 int command_pos=0;
@@ -65,7 +66,14 @@ float last_gyro_angle_x, last_gyro_angle_y, last_gyro_angle_z;
 /* 현재 Tick Count값을 저장하는 전역변수 */
 uint32_t g_currentTick = 0;
 
+/* 속도 변조를 위한 타이머 카운트 전역변수 */
 int speed_updown_timer_count = 0;
+
+/* 초음파 거리센서(HC-SR04모듈)
+ *    1) catcher_status : 트랩상태(0-상승엣지,1-하강엣지)
+ *    2) duration : 마지막으로 캡처한 펄스의 지속 시간 */
+uint8_t catcher_status = 0;
+uint16_t duration = 0;
 
 /* DHT11 온습도 센서 */
 u8 temperature;
@@ -79,15 +87,22 @@ void _GPIO_MOTOR2Init(void);
 void _GPIO_MOTORInit(void);
 void _GPIO_ADCInit(void);
 void _GPIO_TIM3Ch3Ch1Init(void);
+void _GPIO_UltraDistance(void);
 void GPIO_Configure(void);
 void ADC_Configure(void);
 void ADC_Initialize(void);
 void _TIM3Ch3Ch1_PWM_Configure(void);
 void _TIM2_Configure(void);
+void _TIM1_Configure(void);
+void _TIM6_Configure(void);
+void _TIM7_Configure(void);
 void TIM_PWM_Configure(void);
 void DMA_Configure(void);
 void _USART_ITR_Configure(void);
 void _TIM2_ITR_Configure(void);
+void _TIM6_ITR_Configure(void);
+void _TIM7_ITR_Configure(void);
+void _EXTI_Ultra_ITR_Configure(void);
 void Interrupt_Configure(void);
 void SendString(USART_TypeDef* USARTx, char* string);
 void _command_forward(void);
@@ -103,10 +118,19 @@ void calculate_accelgyro_average(int total_readnum);
 void set_last_read_angle_data(unsigned long time, float x, float y, float z, float gyro_x, float gyro_y, float gyro_z);
 void PrintAccelGryroRaw2Angle(int16_t accelgyro[6]);
 uint32_t GetTickCount(void);
+void UIOutline_Init(void);
+void Delay_ms(uint32_t ms);
+void UltraDistance_Init(void);
+uint16_t getDistance(void);
 void USART1_IRQHandler(void);
 void USART2_IRQHandler(void);
-void UIOutline_Init(void);
-
+void USART3_IRQHandler(void);
+void TIM6_IRQHandler(void);
+void TIM2_IRQHandler(void);
+void TIM1_IRQHandler(void);
+void TIM6_IRQHandler(void);
+void TIM7_IRQHandler(void);
+void EXTI0_IRQHandler(void);
 
 int main(void) {
 	/* SHT15 온습도센서 Variables */
@@ -134,6 +158,9 @@ int main(void) {
 
 	/* I2C를 이용한 MPU6050 초기화 */
 	MPU6050_Initialize();
+
+	/* HC-SR04 초음파 거리센서 초기화 */
+	UltraDistance_Init();
 
 	/* 메인 UI틀 초기화 */
 	LCD_Clear(WHITE);
@@ -228,9 +255,11 @@ int main(void) {
 		}
 
 		/* DHT11 온습도센서 */
+
+		/* HC-SR04 초음파 거리센서 */
+		LCD_ShowNum(190,285, getDistance(), 4, BLACK, WHITE);
 	}
 }
-
 
 void RCC_Configure(void) {
 	/* Enable Clock for Interrupt EXTI(외부 인터럽트) */
@@ -263,6 +292,14 @@ void RCC_Configure(void) {
 
 	/* 가속도 GetTickCount()역할을 하는 함수를 위한 TIM1(1msec주기) 클럭 인가 */
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1, ENABLE);
+
+	/* 초음파 거리센서(Trig:PE6, Echo:PA0)
+	 *    1) 에코펄스 지속시간 계산 + 에코 라인의 잔류 진동 감쇄에 필요 : TIM6 사용
+	 *    2) 타이머의 타이밍을 켬 : TIM7
+	 *    3) 외부인터럽트는 기본적으로 전체 포트 A에 대해 활성화됨(여기서는 PA0사용) */
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM6, ENABLE);
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM7, ENABLE);
+	RCC_APB2PeriphClockCmd(RCC_APB2ENR_AFIOEN , ENABLE);
 }
 
 void USART_Configure(void) {
@@ -433,12 +470,22 @@ void _GPIO_TIM3Ch3Ch1Init(void) {
 	GPIO_Init(GPIOA, &GPIOB_TIM3Ch3Ch1_init);
 }
 
+void _GPIO_UltraDistance(void) {
+	GPIO_InitTypeDef GPIOE_UltraDistance_init;
+
+	GPIOE_UltraDistance_init.GPIO_Pin = GPIO_Pin_6;
+	GPIOE_UltraDistance_init.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIOE_UltraDistance_init.GPIO_Speed = GPIO_Speed_2MHz;
+	GPIO_Init(GPIOE, &GPIOE_UltraDistance_init);
+}
+
 void GPIO_Configure(void) {
 	_GPIO_USARTInit();
 	_GPIO_LEDInit();
 	_GPIO_MOTORInit();
 	_GPIO_ADCInit();
 	_GPIO_TIM3Ch3Ch1Init();
+	_GPIO_UltraDistance();
 }
 
 void ADC_Configure(void){
@@ -538,10 +585,26 @@ void _TIM1_Configure(void) {
 	TIM_Cmd(TIM1, ENABLE);
 }
 
+void _TIM6_Configure(void) {
+	/* 프리스케일러가 마이크로 초에 한번 트리거하도록 설정 */
+	TIM6->PSC = 24 - 1;
+	/* 응답 제한은 50msec = 50,000마이크로 초 */
+	TIM6->ARR = 50000;
+}
+
+void _TIM7_Configure(void) {
+	/* 프리스케일러가 마이크로 초에 한번 트리거하도록 설정 */
+	TIM7->PSC = 24 - 1;
+	/* 동작한계는 10마이크로 초 */
+	TIM7->ARR = 10;
+}
+
 void TIM_PWM_Configure(void){
 	_TIM3Ch3Ch1_PWM_Configure();
 	_TIM2_Configure();
 	_TIM1_Configure();
+	_TIM6_Configure();
+	_TIM7_Configure();
 }
 
 void DMA_Configure(void){
@@ -596,9 +659,34 @@ void _TIM2_ITR_Configure(void) {
 	NVIC_Init(&NVIC_init);
 }
 
+void _TIM6_ITR_Configure(void) {
+	/* 해결방법 TIM6_IRQn 인터럽트 주기를 계산하는 데 필요. */
+	NVIC_SetPriority(TIM6_IRQn, 3);
+	NVIC_EnableIRQ(TIM6_IRQn);
+}
+
+void _TIM7_ITR_Configure(void) {
+	/* 해상도 TIM7_IRQn 인터럽트 신호 펄스를 계산하는 데 필요함. */
+	NVIC_SetPriority(TIM7_IRQn, 2);
+	NVIC_EnableIRQ(TIM7_IRQn);
+}
+
+void _EXTI_Ultra_ITR_Configure(void) {
+	/* 제로 레그 중단이 허용됨. */
+	EXTI->IMR |= EXTI_IMR_MR0;
+	/* 상승 앞면에 따른 중단 */
+	EXTI->RTSR |= EXTI_RTSR_TR0;
+
+	NVIC_SetPriority(EXTI0_IRQn, 1);
+	NVIC_EnableIRQ(EXTI0_IRQn);
+}
+
 void Interrupt_Configure(void) {
 	_USART_ITR_Configure();
 	_TIM2_ITR_Configure();
+	_TIM6_ITR_Configure();
+	_TIM7_ITR_Configure();
+	_EXTI_Ultra_ITR_Configure();
 }
 
 /* Todo : 이게 필요할지 잘 모르겠다. 나중에 필요없으면 삭제할 것 */
@@ -878,6 +966,27 @@ void UIOutline_Init(void) {
 	LCD_DrawRectangle(5, 200, 235, 315);
 }
 
+void Delay_ms(uint32_t ms) {
+	volatile uint32_t nCount;
+	RCC_ClocksTypeDef RCC_Clocks;
+	RCC_GetClocksFreq (&RCC_Clocks);
+
+	nCount = (RCC_Clocks.HCLK_Frequency/10000)*ms;
+	for(; nCount!=0; nCount--);
+}
+
+void UltraDistance_Init(void) {
+	/* 처음으로 타이머7을 시작하여 10ms를 카운트함. */
+	TIM7->DIER |= TIM_DIER_UIE;		// 타이머 7에서 인터럽트 사용
+	GPIOE->ODR |= GPIO_Pin_6;		// 신호 충동 켜기
+	TIM7->CR1 |= TIM_CR1_CEN;		// 타이머 시작
+}
+
+uint16_t getDistance(void) {
+	Delay_ms(500);
+	return duration;
+}
+
 /* Todo : 개발자 디버그용이므로 나중에 지울 것 */
 //void USART1_IRQHandler(void) {
 //	char recv_data;
@@ -1077,4 +1186,54 @@ void TIM1_IRQHandler(void) {
 		g_currentTick++;
 		TIM_ClearITPendingBit(TIM1, TIM_IT_Update);		// clear interrupt flag
 	}
+}
+
+// 인터럽트 처리기 TIM6_DAC
+// 타이머 6이 사이클주기 동안 50 μs를 계산 한 후에 호출됨
+void TIM6_IRQHandler(void)
+{
+	TIM6->SR &= ~TIM_SR_UIF;             // UIF 플래그 재설정
+	GPIOE->ODR |= GPIO_Pin_6;            // 신호 충동 켜기
+	// 10ms 카운트 다운시 타이머 7이 시작됨
+	TIM7->DIER |= TIM_DIER_UIE;          // 타이머 7에서 인터럽트 사용
+	TIM7->CR1 |= TIM_CR1_CEN;            // 타이머 시작
+}
+
+// 인터럽트 처리기 TIM7_DAC
+// 타이머 7이 신호 펄스에 대해 10 μs를 계산 한 후 호출됨
+void TIM7_IRQHandler(void)
+{
+	TIM7->SR &= ~TIM_SR_UIF;             // UIF 플래그 재설정
+	GPIOE->ODR &= ~GPIO_Pin_6;           // 신호 충동을 멈춤
+	TIM7->DIER &= ~TIM_DIER_UIE;         // 타이머 7의 인터럽트 금지
+}
+
+// 인터럽트 핸들러 EXTI0 : 신호 레벨 변경
+void EXTI0_IRQHandler(void)
+{
+	// 상승하는 정면을 따라 잡으면
+	if (!catcher_status)
+	{
+		// 카운트 펄스 지속 시간을 시작
+		TIM6->CR1 |= TIM_CR1_CEN;
+		// 하강 에지 잡기로 전환
+		catcher_status = 1;
+		EXTI->RTSR &= ~EXTI_RTSR_TR0;
+		EXTI->FTSR |= EXTI_FTSR_TR0;
+	}
+	// 포착 된 경우
+	else
+	{
+		TIM6->CR1 &= ~TIM_CR1_CEN;         // 타이머 정지
+		duration = TIM6->CNT;              // 기간을 μs 단위로 읽음
+		TIM6->CNT = 0;                     // 카운터 레지스터 재설정
+		// 증가하는 전선 잡기로 전환
+		catcher_status = 0;
+		EXTI->FTSR &= ~EXTI_FTSR_TR0;
+		EXTI->RTSR |= EXTI_RTSR_TR0;
+		// 50ms의 카운트 다운 시에 타이머 6을 시작
+		TIM6->DIER |= TIM_DIER_UIE;        // 타이머에서 인터럽트 허용
+		TIM6->CR1 |= TIM_CR1_CEN;          // 타이머 시작
+	}
+	EXTI->PR |= 0x01;                    // flag 지우기
 }
