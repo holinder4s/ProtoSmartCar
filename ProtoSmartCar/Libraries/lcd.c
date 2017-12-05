@@ -17,7 +17,7 @@ uint16_t DeviceCode;
 
 void LCD_WR_REG(uint16_t LCD_Reg)
 {
-	//코드 작성
+	//肄붾뱶 �묒꽦
 	GPIO_ResetBits(GPIOC, GPIO_Pin_6); 		//LCD_CS(0);
 	GPIO_SetBits(GPIOD, GPIO_Pin_15); 		//LCD_RD(1)
 	GPIO_ResetBits(GPIOD, GPIO_Pin_13); 	//LCD_RS(0);
@@ -29,7 +29,7 @@ void LCD_WR_REG(uint16_t LCD_Reg)
 
 void LCD_WR_DATA(uint16_t LCD_Data)
 {
-	//코드 작성
+	//肄붾뱶 �묒꽦
 	GPIO_ResetBits(GPIOC, GPIO_Pin_6); 		//LCD_CS(0)
 	GPIO_SetBits(GPIOD, GPIO_Pin_15); 		//LCD_RD(1)
 	GPIO_SetBits(GPIOD, GPIO_Pin_13);		//LCD_RS(1)
@@ -47,7 +47,7 @@ uint16_t LCD_ReadReg(uint16_t LCD_Reg)
 	GPIOF->CRL=0x88888888;
 	GPIOF->CRH=0x88888888;
 
-	//코드 작성
+	//肄붾뱶 �묒꽦
 	GPIO_ResetBits(GPIOC, GPIO_Pin_6); 		//LCD_CS(0)
 	GPIO_SetBits(GPIOD, GPIO_Pin_13);		//LCD_RS(1)
 	GPIO_SetBits(GPIOD, GPIO_Pin_14);		//LCD_WR(1)
@@ -292,7 +292,7 @@ u32 mypow(u8 m,u8 n)
 	return result;
 }			 
 
-void LCD_ShowNum(u8 x,u8 y,u32 num,u8 len, u16 PenColor, u16 BackColor)
+void LCD_ShowNum(uint16_t x,uint16_t y,u32 num,u8 len, u16 PenColor, u16 BackColor)
 {    
 	u8 size = 16;     	
 	u8 t,temp;

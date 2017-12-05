@@ -140,6 +140,9 @@ int main(void) {
 	float temp_val_real = 0.0;
 	float dew_point = 0.0;
 
+	/* 초음파 거리센서 거리 값 */
+	int distance;
+
 	/* 초기화 및 Configuration 작업 */
 	RCC_Configure();
 	LCD_Init();
@@ -174,7 +177,7 @@ int main(void) {
 		/* 조도센서 값 LCD에 출력
 		 *    1) x > 3000 : 밤(어두움)
 		 *    2) else : 낮(밝음) */
-		LCD_ShowNum(190,225,ADC_result_value_arr[0],4,BLACK,WHITE);
+		LCD_ShowNum(190,225,ADC_result_value_arr[0],5,BLACK,WHITE);
 		if(ADC_result_value_arr[0] > 3000) {
 			GPIO_SetBits(GPIOD,GPIO_Pin_2);
 			GPIO_SetBits(GPIOD,GPIO_Pin_3);
@@ -188,7 +191,7 @@ int main(void) {
 		 *    1) x < 3000 : 강한 빗물
 		 *    2) x < 3500 : 약한 빗물
 		 *    3) else : 빗물 x */
-		LCD_ShowNum(190,245,ADC_result_value_arr[1],4,BLACK,WHITE);
+		LCD_ShowNum(190,245,ADC_result_value_arr[1],5,BLACK,WHITE);
 		if(ADC_result_value_arr[1]<3000) {
 			rain_power_flag = 2;
 			GPIO_ResetBits(GPIOD,GPIO_Pin_3);
@@ -205,7 +208,7 @@ int main(void) {
 		/* 인체 감지 센서 값 LCD에 출력
 		 *    1) x < 2000 : 사람 없음
 		 *    2) x > 2000 : 사람 감지 */
-		LCD_ShowNum(190,265,ADC_result_value_arr[2],4,BLACK,WHITE);
+		LCD_ShowNum(190,265,ADC_result_value_arr[2],5,BLACK,WHITE);
 		if(ADC_result_value_arr[2] > 2000) {
 			voice_command_enable = 1;
 		}else {
@@ -256,8 +259,11 @@ int main(void) {
 
 		/* DHT11 온습도센서 */
 
-		/* HC-SR04 초음파 거리센서 */
-		LCD_ShowNum(190,285, getDistance(), 4, BLACK, WHITE);
+		/* HC-SR04 초음파 거리센서 : 앞에 장애물이 있을 경우 멈춤. */
+		distance = getDistance();
+		LCD_ShowNum(190,285, distance, 5, BLACK, WHITE);
+		if(distance <= 2500)
+			command_move(0);
 	}
 }
 
