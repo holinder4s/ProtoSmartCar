@@ -991,7 +991,7 @@ void UltraDistance_Init(void) {
 }
 
 uint16_t getDistance(void) {
-	Delay_ms(500);
+	Delay_ms(100);
 	return duration;
 }
 
