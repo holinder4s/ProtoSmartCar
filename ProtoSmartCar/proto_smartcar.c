@@ -968,8 +968,10 @@ void UIOutline_Init(void) {
 	LCD_ShowString(20, 70, "[+] Humidity    : ", BLACK, WHITE);
 	LCD_ShowString(20, 100, "[+] Velocity    : ", BLACK, WHITE);
 
-	LCD_ShowString(50, 180, "- Accident Log -", BLACK, WHITE);
-	LCD_DrawRectangle(5, 200, 235, 315);
+	LCD_ShowString(25, 180, "- Accident Log -", BLACK, WHITE);
+	LCD_DrawRectangle(5, 200, 175, 315);
+	LCD_ShowString(185, 180, "Sensor", BLACK, WHITE);
+	LCD_DrawRectangle(180, 200, 235, 315);
 }
 
 void Delay_ms(uint32_t ms) {
