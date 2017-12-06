@@ -22,7 +22,7 @@
 #include <stdbool.h>
 #include <math.h>
 
-#include "usart.h"
+//#include "usart.h"
 #include "DHT11.h"
 #include "delay.h"
 //#include <Tick.h>
@@ -42,7 +42,7 @@
  *    12) last_???_??? : 최신 가속도 센서 가공 값
  *    13) g_currentTick : TickCount값 => 시간 계산을 위해 이용(1msec)
  *    14) speed_updown_timer_count : 속도 변조를 1초마다 하기위해 세팅 */
-__IO uint32_t ADC_result_value_arr[3];
+__IO uint32_t ADC_result_value_arr[5];
 char command[100];
 int command_pos=0;
 
@@ -134,12 +134,9 @@ void TIM7_IRQHandler(void);
 void EXTI0_IRQHandler(void);
 
 int main(void) {
-	/* SHT15 온습도센서 Variables */
-	uint16_t humi_val, temp_val;
-	uint8_t err = 0, checksum = 0;
+	/* 온습도센서 Variables */
 	float humi_val_real = 0.0;
 	float temp_val_real = 0.0;
-	float dew_point = 0.0;
 
 	/* 초음파 거리센서 거리 값 */
 	int distance;
@@ -267,10 +264,12 @@ int main(void) {
 		if(distance <= 2500)
 			command_move(0);
 
-		/* DHT11 온습도센서 */
+		/* 온습도센서 */
 		//DHT11_Read_Data(&temperature,&humidity);
-		//LCD_ShowNum(150,225, temperature, 2, BLACK, WHITE);
-		//LCD_ShowNum(150,225, humidity, 2, BLACK, WHITE);
+		temp_val_real = ((ADC_result_value_arr[3] / 1000) / 5.0) * 217.75 - 66.875;
+		humi_val_real = ((ADC_result_value_arr[4] / 1000) / 5.0) * 125 -12.5;
+		LCD_ShowNum(180,40, (int)ADC_result_value_arr[3], 4, BLACK, WHITE);
+		LCD_ShowNum(180,70, (int)ADC_result_value_arr[4], 4, BLACK, WHITE);
 	}
 }
 
@@ -462,7 +461,7 @@ void _GPIO_ADCInit(void){
 	 * GPIOC mode : Analog Input Mode */
 	GPIO_InitTypeDef GPIOC_ADC_init;
 	GPIOC_ADC_init.GPIO_Mode = GPIO_Mode_AIN;
-	GPIOC_ADC_init.GPIO_Pin = GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3;
+	GPIOC_ADC_init.GPIO_Pin = GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_5;
 	GPIO_Init(GPIOC, &GPIOC_ADC_init);
 }
 
@@ -510,10 +509,12 @@ void ADC_Configure(void){
 	ADC_InitStructure.ADC_ContinuousConvMode=ENABLE;
 	ADC_InitStructure.ADC_ExternalTrigConv=ADC_ExternalTrigConv_None;
 	ADC_InitStructure.ADC_DataAlign=ADC_DataAlign_Right;
-	ADC_InitStructure.ADC_NbrOfChannel=3;
+	ADC_InitStructure.ADC_NbrOfChannel=5;
 	ADC_RegularChannelConfig(ADC1,ADC_Channel_11,1,ADC_SampleTime_239Cycles5);
 	ADC_RegularChannelConfig(ADC1,ADC_Channel_12,2,ADC_SampleTime_239Cycles5);
 	ADC_RegularChannelConfig(ADC1,ADC_Channel_13,3,ADC_SampleTime_239Cycles5);
+	ADC_RegularChannelConfig(ADC1,ADC_Channel_14,4,ADC_SampleTime_239Cycles5);
+	ADC_RegularChannelConfig(ADC1,ADC_Channel_15,5,ADC_SampleTime_239Cycles5);
 	ADC_Init(ADC1,&ADC_InitStructure);
 
 	ADC_DMACmd(ADC1,ENABLE);
@@ -628,7 +629,7 @@ void DMA_Configure(void){
 	DMA_init.DMA_PeripheralBaseAddr=(uint32_t)&ADC1->DR;
 	DMA_init.DMA_MemoryBaseAddr=(uint32_t)ADC_result_value_arr;
 	DMA_init.DMA_DIR=DMA_DIR_PeripheralSRC;
-	DMA_init.DMA_BufferSize=3;
+	DMA_init.DMA_BufferSize=5;
 	DMA_init.DMA_PeripheralInc=DMA_PeripheralInc_Disable;
 	DMA_init.DMA_MemoryInc=DMA_MemoryInc_Enable;
 	DMA_init.DMA_PeripheralDataSize=DMA_PeripheralDataSize_Word;
