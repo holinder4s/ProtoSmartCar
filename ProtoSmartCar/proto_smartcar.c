@@ -101,6 +101,8 @@ void _GPIO_UltraDistance(void);
 void _GPIO_Button(void);
 void GPIO_Configure(void);
 void ADC_Configure(void);
+void _GPIO_LedControl(void);
+void _GPIO_TempControl(void);
 void ADC_Initialize(void);
 void _TIM3Ch3Ch1_PWM_Configure(void);
 void _TIM2_Configure(void);
@@ -195,10 +197,14 @@ int main(void) {
 		if(ADC_result_value_arr[0] > 3000) {
 			GPIO_SetBits(GPIOD,GPIO_Pin_4);
 			GPIO_SetBits(GPIOD,GPIO_Pin_7);
+			GPIO_SetBits(GPIOC,GPIO_Pin_10);
+			GPIO_SetBits(GPIOC,GPIO_Pin_11);
 		}
 		else {
 			GPIO_ResetBits(GPIOD,GPIO_Pin_4);
 			GPIO_ResetBits(GPIOD,GPIO_Pin_7);
+			GPIO_ResetBits(GPIOC,GPIO_Pin_10);
+			GPIO_ResetBits(GPIOC,GPIO_Pin_11);
 		}
 
 		/* 빗물 감지 센서 값 LCD에 출력
@@ -277,11 +283,24 @@ int main(void) {
 		if(distance <= 2500)
 			command_move(0);
 
-		/* 온습도센서 */
-		temp_val_real = ((ADC_result_value_arr[3] / 1000) / 5.0) * 217.75 - 66.875;
-		humi_val_real = ((ADC_result_value_arr[4] / 1000) / 5.0) * 125 -12.5;
-		LCD_ShowNum(180,40, (int)ADC_result_value_arr[3], 4, BLACK, WHITE);
-		LCD_ShowNum(180,70, (int)ADC_result_value_arr[4], 4, BLACK, WHITE);
+		/* 온습도센서
+		 *   1) 온도 측정 : float형의 temp_val_real에 저장
+		 *   2) 습도 측정 : float형의 humi_val_real에 저장 */
+		//temp_val_real = ((ADC_result_value_arr[3] / 6000) / 5.0) * 217.75 - 66.875;
+		//humi_val_real = ((ADC_result_value_arr[4] / 6000) / 5.0) * 125 -12.5;
+		temp_val_real = ADC_result_value_arr[3] / 100;
+		humi_val_real = ADC_result_value_arr[4] / 100;
+		LCD_ShowNum(180,40, (int)temp_val_real, 4, BLACK, WHITE);
+		LCD_ShowNum(180,70, (int)humi_val_real, 4, BLACK, WHITE);
+
+		if(temp_val_real > 20) {
+			GPIO_SetBits(GPIOC, GPIO_Pin_14);
+		}else if(temp_val_real < 23) {
+			GPIO_SetBits(GPIOC, GPIO_Pin_15);
+		}else {
+			GPIO_ResetBits(GPIOC, GPIO_Pin_14);
+			GPIO_ResetBits(GPIOC, GPIO_Pin_15);
+		}
 
 		/* 지문인식센서 */
 		if(!(GPIOD_IDR & 0x800))
@@ -568,6 +587,32 @@ void _GPIO_Button(void) {
 	GPIO_Init(GPIOD, &GPIOD_Button_init);
 }
 
+void _GPIO_LedControl(void) {
+	/* 주위 밝기(밤, 낮)에 따른 라이트 제어를 위한 LED(PC10, PC11) 아웃풋 모드 설정 */
+	GPIO_InitTypeDef GPIOE_TempContol_init;
+
+	GPIOE_TempContol_init.GPIO_Pin = GPIO_Pin_10 | GPIO_Pin_11;
+	GPIOE_TempContol_init.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIOE_TempContol_init.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(GPIOC, &GPIOE_TempContol_init);
+
+	GPIO_ResetBits(GPIOC, GPIO_Pin_10);
+	GPIO_ResetBits(GPIOC, GPIO_Pin_11);
+}
+
+void _GPIO_TempControl(void) {
+	/* 실내온도 조절을 위한 에어컨/히터(PC14, PC15) 아웃풋 모드 설정 */
+	GPIO_InitTypeDef GPIOE_TempContol_init;
+
+	GPIOE_TempContol_init.GPIO_Pin = GPIO_Pin_14 | GPIO_Pin_15;
+	GPIOE_TempContol_init.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIOE_TempContol_init.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(GPIOC, &GPIOE_TempContol_init);
+
+	GPIO_ResetBits(GPIOC, GPIO_Pin_14);
+	GPIO_ResetBits(GPIOC, GPIO_Pin_15);
+}
+
 void GPIO_Configure(void) {
 	_GPIO_USARTInit();
 	_GPIO_LEDInit();
@@ -576,6 +621,8 @@ void GPIO_Configure(void) {
 	_GPIO_TIM3Ch3Ch1Init();
 	_GPIO_UltraDistance();
 	_GPIO_Button();
+	_GPIO_LedControl();
+	_GPIO_TempControl();
 }
 
 void ADC_Configure(void){
@@ -614,26 +661,35 @@ void _TIM3Ch3Ch1_PWM_Configure(void) {
 	/* 기본 System Clock : 72MHz
 	 * Prescale = 72MHz / 1MHz - 1 = 71 => 72MHz를 1MHz Timer clock으로 세팅
 	 * TIM_Period = 1MHz / 50Hz = 20,000 => 1MHz Timer Clock을 20,000주기를 통해 50Hz 주기로 세팅 */
-	TIM_TimeBaseInitTypeDef TIM3Ch3Ch1_Init;
+	TIM_TimeBaseInitTypeDef TIM3Ch3Ch2Ch1_Init;
 
 	TIM_OCInitTypeDef PWM_TIM3Ch3Ch1_Init;
 
-	TIM3Ch3Ch1_Init.TIM_Prescaler = (uint16_t)(SystemCoreClock / 1000000) - 1;
-	TIM3Ch3Ch1_Init.TIM_Period = 20000 - 1;
-	TIM3Ch3Ch1_Init.TIM_ClockDivision = 0;
-	TIM3Ch3Ch1_Init.TIM_CounterMode = TIM_CounterMode_Down;
-	TIM_TimeBaseInit(TIM3, &TIM3Ch3Ch1_Init);
+	TIM3Ch3Ch2Ch1_Init.TIM_Prescaler = (uint16_t)(SystemCoreClock / 1000000) - 1;
+	TIM3Ch3Ch2Ch1_Init.TIM_Period = 20000 - 1;
+	TIM3Ch3Ch2Ch1_Init.TIM_ClockDivision = 0;
+	TIM3Ch3Ch2Ch1_Init.TIM_CounterMode = TIM_CounterMode_Down;
+	TIM_TimeBaseInit(TIM3, &TIM3Ch3Ch2Ch1_Init);
 
 	PWM_TIM3Ch3Ch1_Init.TIM_OCMode = TIM_OCMode_PWM1;
 	PWM_TIM3Ch3Ch1_Init.TIM_OCPolarity = TIM_OCPolarity_High;
 	PWM_TIM3Ch3Ch1_Init.TIM_OutputState = TIM_OutputState_Enable;
 
+	/* 자동차 와이퍼 */
 	/* Servo Moter 0도 : 7.5% Duty Cycle을 초기 값으로 PWM mode 설정 */
 	/* 서보 모터 각도 제어 : 초기 duty cycle을 7.5%로 초기화 */
 	PWM_TIM3Ch3Ch1_Init.TIM_Pulse = 1500;
 	TIM_OC3Init(TIM3, &PWM_TIM3Ch3Ch1_Init);
 	TIM_OC3PreloadConfig(TIM3, TIM_OCPreload_Disable);
 
+	/* Door Control : Open / Close */
+	/* Servo Moter 0도 : 7.5% Duty Cycle을 초기 값으로 PWM mode 설정 */
+	/* 서보 모터 각도 제어 : 초기 duty cycle을 7.5%로 초기화 */
+	PWM_TIM3Ch3Ch1_Init.TIM_Pulse = 1500;
+	TIM_OC3Init(TIM3, &PWM_TIM3Ch3Ch1_Init);
+	TIM_OC3PreloadConfig(TIM3, TIM_OCPreload_Disable);
+
+	/* 속도 */
 	/* DC 모터 속도 제어 : 초기 duty cycle을 50%로 초기화 */
 	PWM_TIM3Ch3Ch1_Init.TIM_Pulse = 10000;
 	TIM_OC1Init(TIM3, &PWM_TIM3Ch3Ch1_Init);
