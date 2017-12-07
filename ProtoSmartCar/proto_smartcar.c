@@ -96,7 +96,7 @@ void _GPIO_MOTOR1Init(void);
 void _GPIO_MOTOR2Init(void);
 void _GPIO_MOTORInit(void);
 void _GPIO_ADCInit(void);
-void _GPIO_TIM3Ch3Ch1Init(void);
+void _GPIO_TIM3Ch3Ch2Ch1Init(void);
 void _GPIO_UltraDistance(void);
 void _GPIO_Button(void);
 void GPIO_Configure(void);
@@ -104,7 +104,7 @@ void ADC_Configure(void);
 void _GPIO_LedControl(void);
 void _GPIO_TempControl(void);
 void ADC_Initialize(void);
-void _TIM3Ch3Ch1_PWM_Configure(void);
+void _TIM3Ch3Ch2Ch1_PWM_Configure(void);
 void _TIM2_Configure(void);
 void _TIM1_Configure(void);
 void _TIM6_Configure(void);
@@ -125,6 +125,7 @@ void _command_right(void);
 void _command_stop(void);
 void command_move(int select);
 void change_pwm_servo_duty_cycle(int percentx10);
+void door_control(bool flag);
 void speed_up_down(int percentx10);
 void AccelGyroInitialize(void);
 void calculate_accelgyro_average(int total_readnum);
@@ -340,10 +341,15 @@ int main(void) {
 				LCD_ShowString(50, 130, "User1 Match success!", BLACK, WHITE);
 				lock_flag = true;
 			}else {
-				lock_flag = false;
 				LCD_ShowString(50, 130, "                           ", BLACK, WHITE);
 				LCD_ShowString(50, 130, "Match Failed..:(", BLACK, WHITE);
+				lock_flag = false;
 			}
+			door_control(lock_flag);
+			lock_flag = false;
+			delay();
+			delay();
+			door_control(lock_flag);
 			fingerprint_mode = -1;
 			break;
 		}
@@ -551,21 +557,26 @@ void _GPIO_ADCInit(void){
 	GPIO_Init(GPIOC, &GPIOC_ADC_init);
 }
 
-void _GPIO_TIM3Ch3Ch1Init(void) {
+void _GPIO_TIM3Ch3Ch2Ch1Init(void) {
 	/* TIM3 Channel 3 : GPIOB Pin 0(Alternative Function)
+	 * TIM3 Channel 2 : GPIOA Pin 7(Alternative Function)
 	 * TIM3 Channel 1 : GPIOA Pin 6(Alternative Function) */
-	GPIO_InitTypeDef GPIOB_TIM3Ch3Ch1_init;
+	GPIO_InitTypeDef GPIOAB_TIM3Ch3Ch2Ch1_init;
 
-	GPIOB_TIM3Ch3Ch1_init.GPIO_Mode = GPIO_Mode_AF_PP;
-	GPIOB_TIM3Ch3Ch1_init.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIOAB_TIM3Ch3Ch2Ch1_init.GPIO_Mode = GPIO_Mode_AF_PP;
+	GPIOAB_TIM3Ch3Ch2Ch1_init.GPIO_Speed = GPIO_Speed_50MHz;
 
 	/* 와이퍼 각도 제어 : TIM3_Channel3(PB0) GPIO 초기화 */
-	GPIOB_TIM3Ch3Ch1_init.GPIO_Pin = GPIO_Pin_0;
-	GPIO_Init(GPIOB, &GPIOB_TIM3Ch3Ch1_init);
+	GPIOAB_TIM3Ch3Ch2Ch1_init.GPIO_Pin = GPIO_Pin_0;
+	GPIO_Init(GPIOB, &GPIOAB_TIM3Ch3Ch2Ch1_init);
+
+	/* 와이퍼 각도 제어 : TIM3_Channel3(PB0) GPIO 초기화 */
+	GPIOAB_TIM3Ch3Ch2Ch1_init.GPIO_Pin = GPIO_Pin_7;
+	GPIO_Init(GPIOA, &GPIOAB_TIM3Ch3Ch2Ch1_init);
 
 	/* DC모터 속도 제어 : TIM3_Channel1(PA6) GPIO 초기화 */
-	GPIOB_TIM3Ch3Ch1_init.GPIO_Pin = GPIO_Pin_6;
-	GPIO_Init(GPIOA, &GPIOB_TIM3Ch3Ch1_init);
+	GPIOAB_TIM3Ch3Ch2Ch1_init.GPIO_Pin = GPIO_Pin_6;
+	GPIO_Init(GPIOA, &GPIOAB_TIM3Ch3Ch2Ch1_init);
 }
 
 void _GPIO_UltraDistance(void) {
@@ -618,7 +629,7 @@ void GPIO_Configure(void) {
 	_GPIO_LEDInit();
 	_GPIO_MOTORInit();
 	_GPIO_ADCInit();
-	_GPIO_TIM3Ch3Ch1Init();
+	_GPIO_TIM3Ch3Ch2Ch1Init();
 	_GPIO_UltraDistance();
 	_GPIO_Button();
 	_GPIO_LedControl();
@@ -657,13 +668,13 @@ void ADC_Initialize(void){
 	ADC_SoftwareStartConvCmd(ADC1,ENABLE);
 }
 
-void _TIM3Ch3Ch1_PWM_Configure(void) {
+void _TIM3Ch3Ch2Ch1_PWM_Configure(void) {
 	/* 기본 System Clock : 72MHz
 	 * Prescale = 72MHz / 1MHz - 1 = 71 => 72MHz를 1MHz Timer clock으로 세팅
 	 * TIM_Period = 1MHz / 50Hz = 20,000 => 1MHz Timer Clock을 20,000주기를 통해 50Hz 주기로 세팅 */
 	TIM_TimeBaseInitTypeDef TIM3Ch3Ch2Ch1_Init;
 
-	TIM_OCInitTypeDef PWM_TIM3Ch3Ch1_Init;
+	TIM_OCInitTypeDef PWM_TIM3Ch3Ch2Ch1_Init;
 
 	TIM3Ch3Ch2Ch1_Init.TIM_Prescaler = (uint16_t)(SystemCoreClock / 1000000) - 1;
 	TIM3Ch3Ch2Ch1_Init.TIM_Period = 20000 - 1;
@@ -671,28 +682,28 @@ void _TIM3Ch3Ch1_PWM_Configure(void) {
 	TIM3Ch3Ch2Ch1_Init.TIM_CounterMode = TIM_CounterMode_Down;
 	TIM_TimeBaseInit(TIM3, &TIM3Ch3Ch2Ch1_Init);
 
-	PWM_TIM3Ch3Ch1_Init.TIM_OCMode = TIM_OCMode_PWM1;
-	PWM_TIM3Ch3Ch1_Init.TIM_OCPolarity = TIM_OCPolarity_High;
-	PWM_TIM3Ch3Ch1_Init.TIM_OutputState = TIM_OutputState_Enable;
+	PWM_TIM3Ch3Ch2Ch1_Init.TIM_OCMode = TIM_OCMode_PWM1;
+	PWM_TIM3Ch3Ch2Ch1_Init.TIM_OCPolarity = TIM_OCPolarity_High;
+	PWM_TIM3Ch3Ch2Ch1_Init.TIM_OutputState = TIM_OutputState_Enable;
 
 	/* 자동차 와이퍼 */
 	/* Servo Moter 0도 : 7.5% Duty Cycle을 초기 값으로 PWM mode 설정 */
 	/* 서보 모터 각도 제어 : 초기 duty cycle을 7.5%로 초기화 */
-	PWM_TIM3Ch3Ch1_Init.TIM_Pulse = 1500;
-	TIM_OC3Init(TIM3, &PWM_TIM3Ch3Ch1_Init);
+	PWM_TIM3Ch3Ch2Ch1_Init.TIM_Pulse = 1500;
+	TIM_OC3Init(TIM3, &PWM_TIM3Ch3Ch2Ch1_Init);
 	TIM_OC3PreloadConfig(TIM3, TIM_OCPreload_Disable);
 
 	/* Door Control : Open / Close */
 	/* Servo Moter 0도 : 7.5% Duty Cycle을 초기 값으로 PWM mode 설정 */
 	/* 서보 모터 각도 제어 : 초기 duty cycle을 7.5%로 초기화 */
-	PWM_TIM3Ch3Ch1_Init.TIM_Pulse = 1500;
-	TIM_OC3Init(TIM3, &PWM_TIM3Ch3Ch1_Init);
-	TIM_OC3PreloadConfig(TIM3, TIM_OCPreload_Disable);
+	PWM_TIM3Ch3Ch2Ch1_Init.TIM_Pulse = 1500;
+	TIM_OC2Init(TIM3, &PWM_TIM3Ch3Ch2Ch1_Init);
+	TIM_OC2PreloadConfig(TIM3, TIM_OCPreload_Disable);
 
 	/* 속도 */
 	/* DC 모터 속도 제어 : 초기 duty cycle을 50%로 초기화 */
-	PWM_TIM3Ch3Ch1_Init.TIM_Pulse = 10000;
-	TIM_OC1Init(TIM3, &PWM_TIM3Ch3Ch1_Init);
+	PWM_TIM3Ch3Ch2Ch1_Init.TIM_Pulse = 10000;
+	TIM_OC1Init(TIM3, &PWM_TIM3Ch3Ch2Ch1_Init);
 	TIM_OC1PreloadConfig(TIM3, TIM_OCPreload_Disable);
 
 	TIM_ARRPreloadConfig(TIM3, ENABLE);
@@ -748,7 +759,7 @@ void _TIM7_Configure(void) {
 }
 
 void TIM_PWM_Configure(void){
-	_TIM3Ch3Ch1_PWM_Configure();
+	_TIM3Ch3Ch2Ch1_PWM_Configure();
 	_TIM2_Configure();
 	_TIM1_Configure();
 	_TIM6_Configure();
@@ -976,6 +987,30 @@ void change_pwm_servo_duty_cycle(int percentx10) {
 	PWM_TIM3Ch3_Init.TIM_OutputState = TIM_OutputState_Enable;
 	PWM_TIM3Ch3_Init.TIM_Pulse = pwm_pulse;
 	TIM_OC3Init(TIM3, &PWM_TIM3Ch3_Init);
+}
+
+void door_control(bool flag) {
+	/* ## PWM 파형 주기 : 50Hz
+	 * ## Duty Cycle
+	 *    1) 3.5% : -90도
+	 *    2) 7.5% : 0도
+	 *    3) 11.5% : 90도
+	 * ## PWM Duty Cycle 계산 => TIM_Pulse = percent * 20,000 / 100
+	 *
+	 * ## flag : open(true), close(false) */
+	TIM_OCInitTypeDef PWM_TIM3Ch3_Init;
+	int pwm_pulse;
+
+	PWM_TIM3Ch3_Init.TIM_OCMode = TIM_OCMode_PWM1;
+	PWM_TIM3Ch3_Init.TIM_OCPolarity = TIM_OCPolarity_High;
+	PWM_TIM3Ch3_Init.TIM_OutputState = TIM_OutputState_Enable;
+	if(flag) {
+		pwm_pulse = 115 * 20000 / 100 / 10;
+	}else {
+		pwm_pulse = 75 * 20000 / 100 / 10;
+	}
+	PWM_TIM3Ch3_Init.TIM_Pulse = pwm_pulse;
+	TIM_OC2Init(TIM3, &PWM_TIM3Ch3_Init);
 }
 
 void speed_up_down(int percentx10) {
