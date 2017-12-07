@@ -9,6 +9,7 @@ C_SRCS += \
 ../Libraries/SHT15.c \
 ../Libraries/Touch.c \
 ../Libraries/delay.c \
+../Libraries/fingerprint.c \
 ../Libraries/lcd.c 
 
 OBJS += \
@@ -17,6 +18,7 @@ OBJS += \
 ./Libraries/SHT15.o \
 ./Libraries/Touch.o \
 ./Libraries/delay.o \
+./Libraries/fingerprint.o \
 ./Libraries/lcd.o 
 
 

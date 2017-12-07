@@ -16,20 +16,14 @@
 #include <string.h>
 #include <lcd.h>
 #include <Touch.h>
-#include <SHT15.h>
-#include <DHT11.h>
 #include <MPU6050.h>
 #include <stdbool.h>
 #include <math.h>
-
-//#include "usart.h"
-#include "DHT11.h"
-#include "delay.h"
-//#include <Tick.h>
+#include <fingerprint.h>
 
 /* Globl Variables
- *    1) ADC_result_value_arr[2] : [0](조도센서), [1](빗물감지센서), [2](인체감지센서)
- *    2) command[100] : 명령어 버퍼
+ *    1) ADC_result_value_arr[5] : [0](조도센서), [1](빗물감지센서), [2](인체감지센서), [3](온습도센서-온도), [4](온습도센서-습도)
+ *    2) command[100] : 차 움직임 명령어 버퍼
  *    3) command_pos : 명령어 위치 초기화 용도
  *    4) voiceBuffer : 보이스 명령어 문자열 셋
  *    5) rain_power_flag : 비의 세기
@@ -41,7 +35,12 @@
  *    11) base_???_? : 가속도 센서 Raw 데이터 평균 값
  *    12) last_???_??? : 최신 가속도 센서 가공 값
  *    13) g_currentTick : TickCount값 => 시간 계산을 위해 이용(1msec)
- *    14) speed_updown_timer_count : 속도 변조를 1초마다 하기위해 세팅 */
+ *    14) speed_updown_timer_count : 속도 변조를 1초마다 하기위해 세팅
+ *    15) catcher_status : 트랩상태(0-상승엣지,1-하강엣지)
+ *    16) duration : 마지막으로 캡처한 펄스의 지속 시간
+ *    17) temperature : 온도 값
+ *    18) humidity : 습도 값
+ *    19) fingerprint_mode : 지문 센서 동작 모드(0:등록, 1:검증) */
 __IO uint32_t ADC_result_value_arr[5];
 char command[100];
 int command_pos=0;
@@ -55,7 +54,7 @@ int servo_direction = 0;
 int timer_count = 0;
 int voice_command_enable = 0;
 
-/* wjdebug : 가속도 센서 테스트 */
+/* 가속도 센서 관련 */
 int16_t  AccelGyro[6]={0};
 bool AccelGyroAverage_flag = true;
 uint16_t base_accel_x=0, base_accel_y=0, base_accel_z=0;
@@ -76,9 +75,16 @@ int speed_updown_timer_count = 0;
 uint8_t catcher_status = 0;
 uint16_t duration = 0;
 
-/* DHT11 온습도 센서 */
+/* ETH-01DV 온습도 센서 */
 u8 temperature;
 u8 humidity;
+
+/* Fingerprint Mode Flag
+ * -1 : sleep 상태
+ * 0 : 모든 사용자 초기화
+ * 1 : 지문등록모드
+ * 2 : 지문대조모드 */
+int fingerprint_mode = -1;
 
 void RCC_Configure(void);
 void USART_Configure(void);
@@ -89,6 +95,7 @@ void _GPIO_MOTORInit(void);
 void _GPIO_ADCInit(void);
 void _GPIO_TIM3Ch3Ch1Init(void);
 void _GPIO_UltraDistance(void);
+void _GPIO_Button(void);
 void GPIO_Configure(void);
 void ADC_Configure(void);
 void ADC_Initialize(void);
@@ -123,8 +130,8 @@ void UIOutline_Init(void);
 void Delay_ms(uint32_t ms);
 void UltraDistance_Init(void);
 uint16_t getDistance(void);
-void USART1_IRQHandler(void);
-void USART2_IRQHandler(void);
+//void USART1_IRQHandler(void);
+//void USART2_IRQHandler(void);
 void USART3_IRQHandler(void);
 void TIM6_IRQHandler(void);
 void TIM2_IRQHandler(void);
@@ -141,6 +148,9 @@ int main(void) {
 	/* 초음파 거리센서 거리 값 */
 	int distance;
 
+	/* 지문인식센서 등록 사람 수 */
+	int i=5;
+
 	/* 초기화 및 Configuration 작업 */
 	RCC_Configure();
 	LCD_Init();
@@ -154,21 +164,30 @@ int main(void) {
 
 	ADC_Initialize();
 
-	/* SHT15 초기화 */
-	SHT15_Init();
-
 	/* I2C를 이용한 MPU6050 초기화 */
 	MPU6050_Initialize();
 
 	/* HC-SR04 초음파 거리센서 초기화 */
 	UltraDistance_Init();
 
-	/* DHT11 온습도 센서 초기화 */
-	//DHT11_Init();
+	/* 지문인식센서 초기화 */
+	LCD_Clear(WHITE);
+	ClearAllUser();
+	AddUser(7);
+	//GetUserCount();
+
+	//printtest();
+	VerifyUser(7);
+	//LCD_ShowNum(50, 130, gRsLength_wj, 10, BLACK, WHITE);
+	PrintResponse();
+
+//	LCD_ShowNum(50, 130, GetcompareLevel(), 10, BLACK, WHITE);
+//	LCD_ShowNum(50, 150, GetTimeOut(), 10, BLACK, WHITE);
+//	LCD_ShowNum(50, 170, GetUserCount(), 10, BLACK, WHITE);
 
 	/* 메인 UI틀 초기화 */
-	LCD_Clear(WHITE);
-	UIOutline_Init();
+	//LCD_Clear(WHITE);
+	//UIOutline_Init();
 	//LCD_ShowString(50, 130, "Accident Occur!!!", RED, WHITE);
 
 	/* Debug용 : 나중에 삭제할 것! */
@@ -178,38 +197,38 @@ int main(void) {
 		/* 조도센서 값 LCD에 출력
 		 *    1) x > 3000 : 밤(어두움)
 		 *    2) else : 낮(밝음) */
-		LCD_ShowNum(190,225,ADC_result_value_arr[0],5,BLACK,WHITE);
+		//LCD_ShowNum(190,225,ADC_result_value_arr[0],5,BLACK,WHITE);
 		if(ADC_result_value_arr[0] > 3000) {
-			GPIO_SetBits(GPIOD,GPIO_Pin_2);
-			GPIO_SetBits(GPIOD,GPIO_Pin_3);
+			//GPIO_SetBits(GPIOD,GPIO_Pin_2);
+			//GPIO_SetBits(GPIOD,GPIO_Pin_3);
 		}
 		else {
-			GPIO_ResetBits(GPIOD,GPIO_Pin_2);
-			GPIO_ResetBits(GPIOD,GPIO_Pin_3);
+			//GPIO_ResetBits(GPIOD,GPIO_Pin_2);
+			//GPIO_ResetBits(GPIOD,GPIO_Pin_3);
 		}
 
 		/* 빗물 감지 센서 값 LCD에 출력
 		 *    1) x < 3000 : 강한 빗물
 		 *    2) x < 3500 : 약한 빗물
 		 *    3) else : 빗물 x */
-		LCD_ShowNum(190,245,ADC_result_value_arr[1],5,BLACK,WHITE);
+		//LCD_ShowNum(190,245,ADC_result_value_arr[1],5,BLACK,WHITE);
 		if(ADC_result_value_arr[1]<3000) {
 			rain_power_flag = 2;
-			GPIO_ResetBits(GPIOD,GPIO_Pin_3);
+			//GPIO_ResetBits(GPIOD,GPIO_Pin_3);
 		}
 		else if(ADC_result_value_arr[1]<3500) {
 			rain_power_flag = 1;
-			GPIO_ResetBits(GPIOD,GPIO_Pin_4);
+			//GPIO_ResetBits(GPIOD,GPIO_Pin_4);
 		}
 		else {
 			rain_power_flag = 0;
-			GPIO_ResetBits(GPIOD,GPIO_Pin_7);
+			//GPIO_ResetBits(GPIOD,GPIO_Pin_7);
 		}
 
 		/* 인체 감지 센서 값 LCD에 출력
 		 *    1) x < 2000 : 사람 없음
 		 *    2) x > 2000 : 사람 감지 */
-		LCD_ShowNum(190,265,ADC_result_value_arr[2],5,BLACK,WHITE);
+		//LCD_ShowNum(190,265,ADC_result_value_arr[2],5,BLACK,WHITE);
 		if(ADC_result_value_arr[2] > 2000) {
 			voice_command_enable = 1;
 		}else {
@@ -260,7 +279,7 @@ int main(void) {
 
 		/* HC-SR04 초음파 거리센서 : 앞에 장애물이 있을 경우 멈춤. */
 		distance = getDistance();
-		LCD_ShowNum(190,285, distance, 5, BLACK, WHITE);
+		//LCD_ShowNum(190,285, distance, 5, BLACK, WHITE);
 		if(distance <= 2500)
 			command_move(0);
 
@@ -268,8 +287,68 @@ int main(void) {
 		//DHT11_Read_Data(&temperature,&humidity);
 		temp_val_real = ((ADC_result_value_arr[3] / 1000) / 5.0) * 217.75 - 66.875;
 		humi_val_real = ((ADC_result_value_arr[4] / 1000) / 5.0) * 125 -12.5;
-		LCD_ShowNum(180,40, (int)ADC_result_value_arr[3], 4, BLACK, WHITE);
-		LCD_ShowNum(180,70, (int)ADC_result_value_arr[4], 4, BLACK, WHITE);
+		//LCD_ShowNum(180,40, (int)ADC_result_value_arr[3], 4, BLACK, WHITE);
+		//LCD_ShowNum(180,70, (int)ADC_result_value_arr[4], 4, BLACK, WHITE);
+
+		/* 지문인식센서 */
+//		switch(fingerprint_mode) {
+//		case 1:
+//			LCD_ShowNum(50, 210, GetUserCount(), 10, BLACK, WHITE);
+//			switch(AddUser(i)) {
+//			case ACK_SUCCESS:
+//				i++;
+//				LCD_ShowString(50, 230, "AddUser success!", BLACK, WHITE);
+//				GPIO_SetBits(GPIOD,GPIO_Pin_3);			// LED2_ON;
+//				delay();
+//				GPIO_ResetBits(GPIOD,GPIO_Pin_3);		// LED2_OFF;
+//				break;
+//
+//			case ACK_FAIL:
+//				LCD_ShowString(50, 230, "Operation fails!", BLACK, WHITE);
+//				GPIO_SetBits(GPIOD,GPIO_Pin_4);			// LED3_ON;
+//				delay();
+//				GPIO_ResetBits(GPIOD,GPIO_Pin_4);		// LED3_OFF;
+//				break;
+//
+//			case ACK_FULL:
+//				LCD_ShowString(50, 230, "Fingerprint is full!", BLACK, WHITE);
+//				GPIO_SetBits(GPIOD,GPIO_Pin_7);			// LED4_ON;
+//				delay();
+//				GPIO_ResetBits(GPIOD,GPIO_Pin_7);		// LED4_OFF;
+//				break;
+//			}
+//			break;
+//		case 2:
+//			switch(VerifyUser())
+//			{
+//			case ACK_SUCCESS:
+//				LCD_ShowString(50, 230, "Match success!", BLACK, WHITE);
+//				GPIO_SetBits(GPIOD,GPIO_Pin_3);			// LED2_ON;
+//				delay();
+//				GPIO_ResetBits(GPIOD,GPIO_Pin_3);		// LED2_OFF;
+//				break;
+//			case ACK_NO_USER:
+//				LCD_ShowString(50, 230, "No user!", BLACK, WHITE);
+//				GPIO_SetBits(GPIOD,GPIO_Pin_4);			// LED3_ON;
+//				delay();
+//				GPIO_ResetBits(GPIOD,GPIO_Pin_4);		// LED3_OFF;
+//				break;
+//			case ACK_TIMEOUT:
+//				LCD_ShowString(50, 230, "Timeout!", BLACK, WHITE);
+//				GPIO_SetBits(GPIOD,GPIO_Pin_4);			// LED3_ON;
+//				delay();
+//				GPIO_ResetBits(GPIOD,GPIO_Pin_4);		// LED3_OFF;
+//				break;
+//			case ACK_GO_OUT:
+//				LCD_ShowString(50, 230, "GO OUT!", BLACK, WHITE);
+//				break;
+//			}
+//			break;
+//		case 3:
+//			ClearAllUser();
+//			LCD_ShowString(50, 230, "All users cleared!", BLACK, WHITE);
+//			break;
+//		}
 	}
 }
 
@@ -277,7 +356,7 @@ void RCC_Configure(void) {
 	/* Enable Clock for Interrupt EXTI(외부 인터럽트) */
 	//RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO);
 
-	/* Enable Clock for Bluetooth(USART2)(안드로이드->보드) and USART1 and USART3(PortB)(음성인식센서) */
+	/* Enable Clock for Bluetooth(USART2)(안드로이드->보드) and USART1(지문인식센서) and USART3(PortB)(음성인식센서) */
 	// GPIOA포트는 USART에 clock때문에 사용해야하는지 사용 안해도 되는지 잘 모르겠음
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB | RCC_APB2ENR_USART1EN, ENABLE);
 	RCC_APB1PeriphClockCmd(RCC_APB1ENR_USART2EN | RCC_APB1ENR_USART3EN, ENABLE);
@@ -288,7 +367,7 @@ void RCC_Configure(void) {
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOE, ENABLE);
 
-	/* LED */
+	/* LED & Button */
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOD, ENABLE);
 
 	/* 조도센서와 빗물감지센서를 사용하기 위한 ADC & DMA 클럭 인가 */
@@ -315,19 +394,22 @@ void RCC_Configure(void) {
 }
 
 void USART_Configure(void) {
-	/* UART 통신 & BT 세팅 : USART1 */
+	/* ## UART 통신 & BT 세팅 or 지문인식센서 : USART1
+	 *    1) 지문인식센서일 경우 baudrate는 19200
+	 *    2) 나머지 경우는 9600 */
 	/* Bluetooth module : USART2 */
 	USART_InitTypeDef USART_init;
 
 	/* USART 기본 설정 값 세팅 */
-	USART_init.USART_BaudRate = 9600;
+	//USART_init.USART_BaudRate = 9600;			// Debug 용도로 사용할 때
+	USART_init.USART_BaudRate = 19200;			// 지문인식센서로 사용할 때
 	USART_init.USART_WordLength = USART_WordLength_8b;
 	USART_init.USART_StopBits = USART_StopBits_1;
 	USART_init.USART_Parity = USART_Parity_No;
 	USART_init.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
 	USART_init.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
 
-	/* USART1 Init(블루투스모듈 설정을 위해 사용) */
+	/* USART1 Init(블루투스모듈 설정 또는 지문인식센서모듈을 위해 사용) */
 	/* USART2 Init(블루투스 수신을 위해 사용, 안드로이드->보드)
 	 * USART3 Init(음성인식센서 사용) */
 	USART_Init(USART1, &USART_init);
@@ -339,7 +421,7 @@ void USART_Configure(void) {
 	USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
 	USART_ITConfig(USART3, USART_IT_RXNE, ENABLE);
 
-	/* Enable USART1, USART2, USART3 */
+	/* Enable USART1, USART2, USART3, UART4 */
 	USART_Cmd(USART1, ENABLE);
 	USART_Cmd(USART2, ENABLE);
 	USART_Cmd(USART3, ENABLE);
@@ -352,6 +434,7 @@ void _GPIO_USARTInit(void) {
 	GPIO_USART_init.GPIO_Mode = GPIO_Mode_AF_PP;
 	GPIO_USART_init.GPIO_Speed = GPIO_Speed_50MHz;
 
+	/* USART1 GPIO 세팅 */
 	/* GPIOA의 9번 10번 핀을 Alternative Function으로 세팅 */
 	GPIO_USART_init.GPIO_Pin = GPIO_Pin_9;
 	GPIO_Init(GPIOA, &GPIO_USART_init);
@@ -360,6 +443,7 @@ void _GPIO_USARTInit(void) {
 	GPIO_USART_init.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_Init(GPIOA, &GPIO_USART_init);
 
+	/* USART2 GPIO 세팅 */
 	/* GPIOA의 2번 3번 핀을 Alternative Function으로 세팅 */
 	GPIO_USART_init.GPIO_Mode = GPIO_Mode_AF_PP;
 	GPIO_USART_init.GPIO_Speed = GPIO_Speed_50MHz;
@@ -371,7 +455,8 @@ void _GPIO_USARTInit(void) {
 	GPIO_USART_init.GPIO_Pin = GPIO_Pin_3;
 	GPIO_Init(GPIOA, &GPIO_USART_init);
 
-	/* GPIOA의 2번 3번 핀을 Alternative Function으로 세팅 */
+	/* USART3 GPIO 세팅 */
+	/* GPIOB의 10번 11번 핀을 Alternative Function으로 세팅 */
 	GPIO_USART_init.GPIO_Mode = GPIO_Mode_AF_PP;
 	GPIO_USART_init.GPIO_Speed = GPIO_Speed_50MHz;
 
@@ -402,7 +487,8 @@ void _GPIO_LEDInit(void) {
 	GPIO_Init(GPIOD, &GPIOD_LED_init);
 
 	/* LED Init State : LED1, LED2, LED3, LED4 on*/
-	GPIO_SetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
+	/* Todo : GPIO_SetBits로 바꿔주기(지문인식센서때문에 임시로 Reset) */
+	GPIO_ResetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
 }
 
 void _GPIO_MOTOR1Init(void) {
@@ -455,9 +541,11 @@ void _GPIO_MOTORInit(void) {
 }
 
 void _GPIO_ADCInit(void){
-	/* ADC Channel 11 : GPIOC Pin 1
-	 * ADC Channel 12 : GPIOC Pin 2
-	 * ADC Channel 13 : GPIOC Pin 3
+	/* ADC Channel 11 : GPIOC Pin 1(조도센서)
+	 * ADC Channel 12 : GPIOC Pin 2(빗물감지센서)
+	 * ADC Channel 13 : GPIOC Pin 3(인체감지센서)
+	 * ADC Channel 14 : GPIOC Pin 4(온습도 - 온도)
+	 * ADC Channel 15 : GPIOC Pin 5(온습도 - 습도)
 	 * GPIOC mode : Analog Input Mode */
 	GPIO_InitTypeDef GPIOC_ADC_init;
 	GPIOC_ADC_init.GPIO_Mode = GPIO_Mode_AIN;
@@ -491,6 +579,16 @@ void _GPIO_UltraDistance(void) {
 	GPIO_Init(GPIOE, &GPIOE_UltraDistance_init);
 }
 
+void _GPIO_Button(void) {
+	/* 지문인식 센서의 동작 기능을 위한 Button1(PD11), Button2(PD12) 인풋 모드 설정 */
+	GPIO_InitTypeDef GPIOD_Button_init;
+
+	GPIOD_Button_init.GPIO_Pin = GPIO_Pin_11 | GPIO_Pin_12;
+	GPIOD_Button_init.GPIO_Mode = GPIO_Mode_IPU;
+	GPIOD_Button_init.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(GPIOD, &GPIOD_Button_init);
+}
+
 void GPIO_Configure(void) {
 	_GPIO_USARTInit();
 	_GPIO_LEDInit();
@@ -498,6 +596,7 @@ void GPIO_Configure(void) {
 	_GPIO_ADCInit();
 	_GPIO_TIM3Ch3Ch1Init();
 	_GPIO_UltraDistance();
+	_GPIO_Button();
 }
 
 void ADC_Configure(void){
@@ -953,13 +1052,15 @@ void PrintAccelGryroRaw2Angle(int16_t accelgyro[6]) {
 	//LCD_ShowNum(20,80,(int)unfiltered_gyro_angle_x*100,10,BLACK,WHITE);
 	//LCD_ShowNum(20,100,(int)unfiltered_gyro_angle_y*100,10,BLACK,WHITE);
 	//LCD_ShowNum(20,120,(int)unfiltered_gyro_angle_z*100,10,BLACK,WHITE);
+
 	if(angle_x > 0) {
-		LCD_ShowString(200, 205, "+", BLACK, WHITE);
-		LCD_ShowNum(210,205,(int)angle_x,2,BLACK,WHITE);		// 실질적으로 필요한 경사 각도
+		//LCD_ShowString(200, 205, "+", BLACK, WHITE);
+		//LCD_ShowNum(210,205,(int)angle_x,2,BLACK,WHITE);		// 실질적으로 필요한 경사 각도
 	}else {
-		LCD_ShowString(200, 205, "-", BLACK, WHITE);
-		LCD_ShowNum(210,205,(int)(-1)*angle_x,2,BLACK,WHITE);		// 실질적으로 필요한 경사 각도
+		//LCD_ShowString(200, 205, "-", BLACK, WHITE);
+		//LCD_ShowNum(210,205,(int)(-1)*angle_x,2,BLACK,WHITE);		// 실질적으로 필요한 경사 각도
 	}
+
 	//LCD_ShowNum(20,160,(int)angle_y,10,BLACK,WHITE);
 	//LCD_ShowNum(20,180,(int)angle_z,10,BLACK,WHITE);
 }
@@ -1010,10 +1111,13 @@ uint16_t getDistance(void) {
 //	/* USART1에서 정보를 받아 출력한다.(블루투스 세팅 용도 & 안드로이드 어플로 송신) */
 //	if (USART_GetITStatus(USART1, USART_IT_RXNE) != RESET) {
 //		recv_data = USART_ReceiveData(USART1);
-//
+//		gRsBuf[gRsLength++] = recv_data;
+//		LCD_ShowNum(50, 130, gRsLength, 10, BLACK, WHITE);
 //		if(recv_data) {
-//			//USART_SendData(USART1, recv_data);								// wjdebug
-//			//while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET);		// wjdebug
+//			//GPIO_SetBits(GPIOD, GPIO_Pin_2);
+//			//USART_SendData(USART1, recv_data+0x30);									// wjdebug
+//			//while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET);				// wjdebug
+//			LCD_ShowNum(50, 150, gRsLength, 10, BLACK, WHITE);
 //			USART_SendData(USART2, recv_data);
 //			while (USART_GetFlagStatus(USART2, USART_FLAG_TXE) == RESET);
 //			USART_ClearITPendingBit(USART1, USART_IT_RXNE);
@@ -1021,56 +1125,56 @@ uint16_t getDistance(void) {
 //	}
 //}
 
-void USART1_IRQHandler(void) {
-	char recv_data;
-
-	/* 안드로이드 어플리케이션에서 보내는 문자열 명령을 받아서 명령어별로 처리하는 인터럽트 */
-	/* Command End : "\n"
-	   Command List : "FORWARD", "BACKWARD", "LEFT", "RIGHT", "STOP", "ON", "OFF"
-	   Optional Command List : "LIGHT_ON", "LIGHT_OFF", "TEMPER_UP", "TEMPER_DOWN", "WIPER_ON", "WIPER_OFF"
-	*/
-	if (USART_GetITStatus(USART1, USART_IT_RXNE) != RESET) {
-		recv_data = USART_ReceiveData(USART1);
-
-		if(recv_data == '!') {
-			if(strstr(command, "CLEAR") != NULL) {
-				GPIO_ResetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
-			}else if(strstr(command, "POWERON") != NULL) {
-				//GPIO_SetBits(GPIOD, GPIO_Pin_2);
-				//speed_up_down(600);
-				//UIOutline_Init();
-			}else if(strstr(command, "POWEROFF") != NULL) {
-				//GPIO_ResetBits(GPIOD, GPIO_Pin_2);
-				//speed_up_down(400);
-				//LCD_Clear(BLACK);
-			}else if(strstr(command, "FORWARD") != NULL) {
-				GPIO_SetBits(GPIOD, GPIO_Pin_3);
-				//speed_up_down(500);
-				command_move(1);
-			}else if(strstr(command, "BACKWARD") != NULL) {
-				GPIO_SetBits(GPIOD, GPIO_Pin_2);
-				//GPIO_SetBits(GPIOD, GPIO_Pin_4);
-				command_move(2);
-			}else if(strstr(command, "LEFT") != NULL) {
-				//GPIO_SetBits(GPIOD, GPIO_Pin_4);
-				command_move(3);
-			}else if(strstr(command, "RIGHT") != NULL) {
-				//GPIO_SetBits(GPIOD, GPIO_Pin_7);
-				command_move(4);
-			}else if(strstr(command, "STOP") != NULL) {
-				GPIO_ResetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
-				command_move(0);
-			}
-			command_pos = 0;
-			memset(command, 0x00, 100);
-		}else {
-			command[command_pos++] = recv_data;
-			USART_SendData(USART1, recv_data);								// wjdebug
-			while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET);		// wjdebug
-		}
-		USART_ClearITPendingBit(USART1, USART_IT_RXNE);
-	}
-}
+//void USART1_IRQHandler(void) {
+//	char recv_data;
+//
+//	/* 안드로이드 어플리케이션에서 보내는 문자열 명령을 받아서 명령어별로 처리하는 인터럽트 */
+//	/* Command End : "\n"
+//	   Command List : "FORWARD", "BACKWARD", "LEFT", "RIGHT", "STOP", "ON", "OFF"
+//	   Optional Command List : "LIGHT_ON", "LIGHT_OFF", "TEMPER_UP", "TEMPER_DOWN", "WIPER_ON", "WIPER_OFF"
+//	*/
+//	if (USART_GetITStatus(USART1, USART_IT_RXNE) != RESET) {
+//		recv_data = USART_ReceiveData(USART1);
+//
+//		if(recv_data == '!') {
+//			if(strstr(command, "CLEAR") != NULL) {
+//				GPIO_ResetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
+//			}else if(strstr(command, "POWERON") != NULL) {
+//				//GPIO_SetBits(GPIOD, GPIO_Pin_2);
+//				//speed_up_down(600);
+//				//UIOutline_Init();
+//			}else if(strstr(command, "POWEROFF") != NULL) {
+//				//GPIO_ResetBits(GPIOD, GPIO_Pin_2);
+//				//speed_up_down(400);
+//				//LCD_Clear(BLACK);
+//			}else if(strstr(command, "FORWARD") != NULL) {
+//				GPIO_SetBits(GPIOD, GPIO_Pin_3);
+//				//speed_up_down(500);
+//				command_move(1);
+//			}else if(strstr(command, "BACKWARD") != NULL) {
+//				GPIO_SetBits(GPIOD, GPIO_Pin_2);
+//				//GPIO_SetBits(GPIOD, GPIO_Pin_4);
+//				command_move(2);
+//			}else if(strstr(command, "LEFT") != NULL) {
+//				//GPIO_SetBits(GPIOD, GPIO_Pin_4);
+//				command_move(3);
+//			}else if(strstr(command, "RIGHT") != NULL) {
+//				//GPIO_SetBits(GPIOD, GPIO_Pin_7);
+//				command_move(4);
+//			}else if(strstr(command, "STOP") != NULL) {
+//				GPIO_ResetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
+//				command_move(0);
+//			}
+//			command_pos = 0;
+//			memset(command, 0x00, 100);
+//		}else {
+//			command[command_pos++] = recv_data;
+//			USART_SendData(USART1, recv_data);								// wjdebug
+//			while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET);		// wjdebug
+//		}
+//		USART_ClearITPendingBit(USART1, USART_IT_RXNE);
+//	}
+//}
 
 void USART2_IRQHandler(void) {
 	char recv_data;
