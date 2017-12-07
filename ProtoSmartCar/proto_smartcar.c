@@ -21,6 +21,8 @@
 #include <math.h>
 #include <fingerprint.h>
 
+#define GPIOD_IDR (*(volatile unsigned *)0x40011408)
+
 /* Globl Variables
  *    1) ADC_result_value_arr[5] : [0](조도센서), [1](빗물감지센서), [2](인체감지센서), [3](온습도센서-온도), [4](온습도센서-습도)
  *    2) command[100] : 차 움직임 명령어 버퍼
@@ -40,7 +42,8 @@
  *    16) duration : 마지막으로 캡처한 펄스의 지속 시간
  *    17) temperature : 온도 값
  *    18) humidity : 습도 값
- *    19) fingerprint_mode : 지문 센서 동작 모드(0:등록, 1:검증) */
+ *    19) fingerprint_mode : 지문 센서 동작 모드(0:등록, 1:검증)
+ *    20) lock_flag : 문열림잠금상태 */
 __IO uint32_t ADC_result_value_arr[5];
 char command[100];
 int command_pos=0;
@@ -82,9 +85,9 @@ u8 humidity;
 /* Fingerprint Mode Flag
  * -1 : sleep 상태
  * 0 : 모든 사용자 초기화
- * 1 : 지문등록모드
- * 2 : 지문대조모드 */
+ * 1 : 지문대조모드 */
 int fingerprint_mode = -1;
+bool lock_flag = false;
 
 void RCC_Configure(void);
 void USART_Configure(void);
@@ -149,7 +152,7 @@ int main(void) {
 	int distance;
 
 	/* 지문인식센서 등록 사람 수 */
-	int i=5;
+	int i=1;
 
 	/* 초기화 및 Configuration 작업 */
 	RCC_Configure();
@@ -170,48 +173,39 @@ int main(void) {
 	/* HC-SR04 초음파 거리센서 초기화 */
 	UltraDistance_Init();
 
-	/* 지문인식센서 초기화 */
-	LCD_Clear(WHITE);
-	ClearAllUser();
-	AddUser(7);
-	//GetUserCount();
-
-	//printtest();
-	VerifyUser(7);
-	//LCD_ShowNum(50, 130, gRsLength_wj, 10, BLACK, WHITE);
-	PrintResponse();
-
-//	LCD_ShowNum(50, 130, GetcompareLevel(), 10, BLACK, WHITE);
-//	LCD_ShowNum(50, 150, GetTimeOut(), 10, BLACK, WHITE);
-//	LCD_ShowNum(50, 170, GetUserCount(), 10, BLACK, WHITE);
-
 	/* 메인 UI틀 초기화 */
-	//LCD_Clear(WHITE);
-	//UIOutline_Init();
+	LCD_Clear(WHITE);
+	UIOutline_Init();
 	//LCD_ShowString(50, 130, "Accident Occur!!!", RED, WHITE);
+
+	/* 지문인식센서 초기화 : 실제로는 삭제해야할 부분 */
+	ClearAllUser();
+	if(GetUserCount() != 1) {
+		AddUser(1);
+		delay();
+	}
 
 	/* Debug용 : 나중에 삭제할 것! */
 	//GPIOResetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
-	//command_move(1);
 	while (1) {
 		/* 조도센서 값 LCD에 출력
 		 *    1) x > 3000 : 밤(어두움)
 		 *    2) else : 낮(밝음) */
-		//LCD_ShowNum(190,225,ADC_result_value_arr[0],5,BLACK,WHITE);
+		LCD_ShowNum(190,225,ADC_result_value_arr[0],5,BLACK,WHITE);
 		if(ADC_result_value_arr[0] > 3000) {
-			//GPIO_SetBits(GPIOD,GPIO_Pin_2);
-			//GPIO_SetBits(GPIOD,GPIO_Pin_3);
+			GPIO_SetBits(GPIOD,GPIO_Pin_4);
+			GPIO_SetBits(GPIOD,GPIO_Pin_7);
 		}
 		else {
-			//GPIO_ResetBits(GPIOD,GPIO_Pin_2);
-			//GPIO_ResetBits(GPIOD,GPIO_Pin_3);
+			GPIO_ResetBits(GPIOD,GPIO_Pin_4);
+			GPIO_ResetBits(GPIOD,GPIO_Pin_7);
 		}
 
 		/* 빗물 감지 센서 값 LCD에 출력
 		 *    1) x < 3000 : 강한 빗물
 		 *    2) x < 3500 : 약한 빗물
 		 *    3) else : 빗물 x */
-		//LCD_ShowNum(190,245,ADC_result_value_arr[1],5,BLACK,WHITE);
+		LCD_ShowNum(190,245,ADC_result_value_arr[1],5,BLACK,WHITE);
 		if(ADC_result_value_arr[1]<3000) {
 			rain_power_flag = 2;
 			//GPIO_ResetBits(GPIOD,GPIO_Pin_3);
@@ -228,7 +222,7 @@ int main(void) {
 		/* 인체 감지 센서 값 LCD에 출력
 		 *    1) x < 2000 : 사람 없음
 		 *    2) x > 2000 : 사람 감지 */
-		//LCD_ShowNum(190,265,ADC_result_value_arr[2],5,BLACK,WHITE);
+		LCD_ShowNum(190,265,ADC_result_value_arr[2],5,BLACK,WHITE);
 		if(ADC_result_value_arr[2] > 2000) {
 			voice_command_enable = 1;
 		}else {
@@ -279,76 +273,61 @@ int main(void) {
 
 		/* HC-SR04 초음파 거리센서 : 앞에 장애물이 있을 경우 멈춤. */
 		distance = getDistance();
-		//LCD_ShowNum(190,285, distance, 5, BLACK, WHITE);
+		LCD_ShowNum(190,285, distance, 5, BLACK, WHITE);
 		if(distance <= 2500)
 			command_move(0);
 
 		/* 온습도센서 */
-		//DHT11_Read_Data(&temperature,&humidity);
 		temp_val_real = ((ADC_result_value_arr[3] / 1000) / 5.0) * 217.75 - 66.875;
 		humi_val_real = ((ADC_result_value_arr[4] / 1000) / 5.0) * 125 -12.5;
-		//LCD_ShowNum(180,40, (int)ADC_result_value_arr[3], 4, BLACK, WHITE);
-		//LCD_ShowNum(180,70, (int)ADC_result_value_arr[4], 4, BLACK, WHITE);
+		LCD_ShowNum(180,40, (int)ADC_result_value_arr[3], 4, BLACK, WHITE);
+		LCD_ShowNum(180,70, (int)ADC_result_value_arr[4], 4, BLACK, WHITE);
 
 		/* 지문인식센서 */
-//		switch(fingerprint_mode) {
-//		case 1:
-//			LCD_ShowNum(50, 210, GetUserCount(), 10, BLACK, WHITE);
-//			switch(AddUser(i)) {
-//			case ACK_SUCCESS:
-//				i++;
-//				LCD_ShowString(50, 230, "AddUser success!", BLACK, WHITE);
-//				GPIO_SetBits(GPIOD,GPIO_Pin_3);			// LED2_ON;
-//				delay();
-//				GPIO_ResetBits(GPIOD,GPIO_Pin_3);		// LED2_OFF;
-//				break;
-//
-//			case ACK_FAIL:
-//				LCD_ShowString(50, 230, "Operation fails!", BLACK, WHITE);
-//				GPIO_SetBits(GPIOD,GPIO_Pin_4);			// LED3_ON;
-//				delay();
-//				GPIO_ResetBits(GPIOD,GPIO_Pin_4);		// LED3_OFF;
-//				break;
-//
-//			case ACK_FULL:
-//				LCD_ShowString(50, 230, "Fingerprint is full!", BLACK, WHITE);
-//				GPIO_SetBits(GPIOD,GPIO_Pin_7);			// LED4_ON;
-//				delay();
-//				GPIO_ResetBits(GPIOD,GPIO_Pin_7);		// LED4_OFF;
-//				break;
-//			}
-//			break;
-//		case 2:
-//			switch(VerifyUser())
-//			{
-//			case ACK_SUCCESS:
-//				LCD_ShowString(50, 230, "Match success!", BLACK, WHITE);
-//				GPIO_SetBits(GPIOD,GPIO_Pin_3);			// LED2_ON;
-//				delay();
-//				GPIO_ResetBits(GPIOD,GPIO_Pin_3);		// LED2_OFF;
-//				break;
-//			case ACK_NO_USER:
-//				LCD_ShowString(50, 230, "No user!", BLACK, WHITE);
-//				GPIO_SetBits(GPIOD,GPIO_Pin_4);			// LED3_ON;
-//				delay();
-//				GPIO_ResetBits(GPIOD,GPIO_Pin_4);		// LED3_OFF;
-//				break;
-//			case ACK_TIMEOUT:
-//				LCD_ShowString(50, 230, "Timeout!", BLACK, WHITE);
-//				GPIO_SetBits(GPIOD,GPIO_Pin_4);			// LED3_ON;
-//				delay();
-//				GPIO_ResetBits(GPIOD,GPIO_Pin_4);		// LED3_OFF;
-//				break;
-//			case ACK_GO_OUT:
-//				LCD_ShowString(50, 230, "GO OUT!", BLACK, WHITE);
-//				break;
-//			}
-//			break;
-//		case 3:
-//			ClearAllUser();
-//			LCD_ShowString(50, 230, "All users cleared!", BLACK, WHITE);
-//			break;
-//		}
+		if(!(GPIOD_IDR & 0x800))
+			fingerprint_mode = 0;
+		else if(!(GPIOD_IDR & 0x1000))
+			fingerprint_mode = 1;
+
+		switch(fingerprint_mode) {
+		case 0:
+			if(VerifyUser(1) == (u8)1) {
+				ClearAllUser();
+				LCD_ShowString(50, 130, "                           ", BLACK, WHITE);
+				LCD_ShowString(50, 130, "All users cleared!", BLACK, WHITE);
+				i = 1;
+				delay();
+				LCD_ShowString(50, 130, "                           ", BLACK, WHITE);
+				LCD_ShowString(50, 130, "Register Admin!", BLACK, WHITE);
+				AddUser(i);
+				i++;
+				delay();
+				LCD_ShowString(50, 130, "                           ", BLACK, WHITE);
+				LCD_ShowString(50, 130, "Register User1!", BLACK, WHITE);
+				AddUser(i);
+				i++;
+				LCD_ShowString(50, 130, "                           ", BLACK, WHITE);
+				LCD_ShowString(50, 130, "Register Success!", BLACK, WHITE);
+			}
+			fingerprint_mode = -1;
+			break;
+		case 1:
+			if(VerifyUser(1)==(u8)1) {
+				LCD_ShowString(50, 130, "                           ", BLACK, WHITE);
+				LCD_ShowString(50, 130, "Admin Match success!", BLACK, WHITE);
+				lock_flag = true;
+			}else if(VerifyUser(2)==(u8)2) {
+				LCD_ShowString(50, 130, "                           ", BLACK, WHITE);
+				LCD_ShowString(50, 130, "User1 Match success!", BLACK, WHITE);
+				lock_flag = true;
+			}else {
+				lock_flag = false;
+				LCD_ShowString(50, 130, "                           ", BLACK, WHITE);
+				LCD_ShowString(50, 130, "Match Failed..:(", BLACK, WHITE);
+			}
+			fingerprint_mode = -1;
+			break;
+		}
 	}
 }
 
@@ -1054,11 +1033,11 @@ void PrintAccelGryroRaw2Angle(int16_t accelgyro[6]) {
 	//LCD_ShowNum(20,120,(int)unfiltered_gyro_angle_z*100,10,BLACK,WHITE);
 
 	if(angle_x > 0) {
-		//LCD_ShowString(200, 205, "+", BLACK, WHITE);
-		//LCD_ShowNum(210,205,(int)angle_x,2,BLACK,WHITE);		// 실질적으로 필요한 경사 각도
+		LCD_ShowString(200, 205, "+", BLACK, WHITE);
+		LCD_ShowNum(210,205,(int)angle_x,2,BLACK,WHITE);		// 실질적으로 필요한 경사 각도
 	}else {
-		//LCD_ShowString(200, 205, "-", BLACK, WHITE);
-		//LCD_ShowNum(210,205,(int)(-1)*angle_x,2,BLACK,WHITE);		// 실질적으로 필요한 경사 각도
+		LCD_ShowString(200, 205, "-", BLACK, WHITE);
+		LCD_ShowNum(210,205,(int)(-1)*angle_x,2,BLACK,WHITE);		// 실질적으로 필요한 경사 각도
 	}
 
 	//LCD_ShowNum(20,160,(int)angle_y,10,BLACK,WHITE);

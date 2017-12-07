@@ -231,11 +231,11 @@ u8 VerifyUser(u8 userid)
 	gTxBuf[3] = 0;
 	gTxBuf[4] = 0;
 
-	m = TxAndRsCmd(5, 8, 150);
+	m = TxAndRsCmd(5, 8, 200);
 
 	if ((m == ACK_SUCCESS) && (IsMasterUser(gRsBuf[4]) == TRUE))
 	{	
-		return ACK_SUCCESS;
+		return gRsBuf[3];
 	}
 	else if(gRsBuf[4] == ACK_NO_USER)
 	{
