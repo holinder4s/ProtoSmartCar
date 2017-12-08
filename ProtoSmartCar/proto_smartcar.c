@@ -89,6 +89,8 @@ u8 humidity;
 int fingerprint_mode = -1;
 bool lock_flag = false;
 
+bool stop_flag = true;
+
 void RCC_Configure(void);
 void USART_Configure(void);
 void _GPIO_LEDInit(void);
@@ -137,7 +139,7 @@ void Delay_ms(uint32_t ms);
 void UltraDistance_Init(void);
 uint16_t getDistance(void);
 //void USART1_IRQHandler(void);
-//void USART2_IRQHandler(void);
+void USART2_IRQHandler(void);
 void USART3_IRQHandler(void);
 void TIM6_IRQHandler(void);
 void TIM2_IRQHandler(void);
@@ -188,6 +190,9 @@ int main(void) {
 		delay();
 	}
 
+	/* 속도 초기화 */
+	LCD_ShowString(180,100, "0 m/s", BLACK, WHITE);
+
 	/* Debug용 : 나중에 삭제할 것! */
 	//GPIOResetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
 	while (1) {
@@ -235,23 +240,6 @@ int main(void) {
 		}else {
 			voice_command_enable = 0;
 		}
-
-		/* SHT15 온습도 센서 사용
-		 *    1) 온도 측정 : float형의 temp_val_real에 저장
-		 *    2) 습도 측정 : float형의 humi_val_real에 저장
-		 *    3) 이슬점 게산 : float형의 dew_point에 저장 */
-//		err += SHT15_Measure(&temp_val, &checksum, TEMP);                  // 온도 측정
-//		err += SHT15_Measure(&humi_val, &checksum, HUMI);                  // 습도 측정
-//		if(err != 0)
-//			SHT15_ConReset();
-//		else {
-//			SHT15_Calculate(temp_val, humi_val, &temp_val_real, &humi_val_real);	// 실제 온도 및 습도 값 계산
-//			dew_point = SHT15_CalcuDewPoint(temp_val_real, humi_val_real);			// 이슬점 온도 계산
-//		}
-		//LCD_ShowNum(20,100,(int)temp_val_real,10,BLACK,WHITE);
-		//LCD_ShowNum(20,120,(int)humi_val_real,10,BLACK,WHITE);
-		//LCD_ShowNum(20,140,(int)dew_point,10,BLACK,WHITE);
-
 
 		/* MPU6050 6축 자이로 가속도 센서 사용
 		 *    1) 경사 측정 : raw sensor데이터를 받아 각도 계산
@@ -366,9 +354,9 @@ void RCC_Configure(void) {
 	RCC_APB1PeriphClockCmd(RCC_APB1ENR_USART2EN | RCC_APB1ENR_USART3EN, ENABLE);
 
 	/* 모터드라이버
-	 *    1) 모터드라이버1(in1:PB8,in2:PB9,in3:PB14,in4:PB15)
-	 *    2) 모터드라이버2(in1:PE4,in2:PE5,in3:PE14,in4:PE15)  */
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
+	 *    1) 모터드라이버1(in1:PA4,in2:PA5,in3:PE2,in4:PE3)
+	 *    2) 모터드라이버2(in1:PE7,in2:PE8,in3:PE9,in4:PE10)  */
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOE, ENABLE);
 
 	/* LED & Button */
@@ -417,6 +405,8 @@ void USART_Configure(void) {
 	/* USART2 Init(블루투스 수신을 위해 사용, 안드로이드->보드)
 	 * USART3 Init(음성인식센서 사용) */
 	USART_Init(USART1, &USART_init);
+
+	USART_init.USART_BaudRate = 9600;
 	USART_Init(USART2, &USART_init);
 	USART_Init(USART3, &USART_init);
 
@@ -425,7 +415,7 @@ void USART_Configure(void) {
 	USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
 	USART_ITConfig(USART3, USART_IT_RXNE, ENABLE);
 
-	/* Enable USART1, USART2, USART3, UART4 */
+	/* Enable USART1, USART2, USART3 */
 	USART_Cmd(USART1, ENABLE);
 	USART_Cmd(USART2, ENABLE);
 	USART_Cmd(USART3, ENABLE);
@@ -493,6 +483,7 @@ void _GPIO_LEDInit(void) {
 	/* LED Init State : LED1, LED2, LED3, LED4 on*/
 	/* Todo : GPIO_SetBits로 바꿔주기(지문인식센서때문에 임시로 Reset) */
 	GPIO_ResetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
+	GPIO_SetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
 }
 
 void _GPIO_MOTOR1Init(void) {
@@ -501,20 +492,21 @@ void _GPIO_MOTOR1Init(void) {
 	GPIOB_MOTOR1_init.GPIO_Mode = GPIO_Mode_Out_PP;
 	GPIOB_MOTOR1_init.GPIO_Speed = GPIO_Speed_50MHz;
 
-	GPIOB_MOTOR1_init.GPIO_Pin = GPIO_Pin_0;
-	GPIO_Init(GPIOE, &GPIOB_MOTOR1_init);
+	GPIOB_MOTOR1_init.GPIO_Pin = GPIO_Pin_5;
+	GPIO_Init(GPIOB, &GPIOB_MOTOR1_init);
 
-	GPIOB_MOTOR1_init.GPIO_Pin = GPIO_Pin_1;
-	GPIO_Init(GPIOE, &GPIOB_MOTOR1_init);
+	GPIOB_MOTOR1_init.GPIO_Pin = GPIO_Pin_8;
+	GPIO_Init(GPIOB, &GPIOB_MOTOR1_init);
 
-	GPIOB_MOTOR1_init.GPIO_Pin = GPIO_Pin_2;
-	GPIO_Init(GPIOE, &GPIOB_MOTOR1_init);
+	GPIOB_MOTOR1_init.GPIO_Pin = GPIO_Pin_12;
+	GPIO_Init(GPIOC, &GPIOB_MOTOR1_init);
 
-	GPIOB_MOTOR1_init.GPIO_Pin = GPIO_Pin_3;
-	GPIO_Init(GPIOE, &GPIOB_MOTOR1_init);
+	GPIOB_MOTOR1_init.GPIO_Pin = GPIO_Pin_13;
+	GPIO_Init(GPIOC, &GPIOB_MOTOR1_init);
 
 	/* 모터 정지 모드로 초기화 */
-	GPIO_ResetBits(GPIOE, GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3);
+	GPIO_ResetBits(GPIOB, GPIO_Pin_5 | GPIO_Pin_8);
+	GPIO_ResetBits(GPIOC, GPIO_Pin_12 | GPIO_Pin_13);
 }
 
 void _GPIO_MOTOR2Init(void) {
@@ -523,20 +515,21 @@ void _GPIO_MOTOR2Init(void) {
 	GPIOE_MOTOR2_init.GPIO_Mode = GPIO_Mode_Out_PP;
 	GPIOE_MOTOR2_init.GPIO_Speed = GPIO_Speed_50MHz;
 
-	GPIOE_MOTOR2_init.GPIO_Pin = GPIO_Pin_4;
-	GPIO_Init(GPIOE, &GPIOE_MOTOR2_init);
+	GPIOE_MOTOR2_init.GPIO_Pin = GPIO_Pin_1;
+	GPIO_Init(GPIOB, &GPIOE_MOTOR2_init);
 
-	GPIOE_MOTOR2_init.GPIO_Pin = GPIO_Pin_5;
-	GPIO_Init(GPIOE, &GPIOE_MOTOR2_init);
+	GPIOE_MOTOR2_init.GPIO_Pin = GPIO_Pin_2;
+	GPIO_Init(GPIOB, &GPIOE_MOTOR2_init);
 
-	GPIOE_MOTOR2_init.GPIO_Pin = GPIO_Pin_14;
-	GPIO_Init(GPIOE, &GPIOE_MOTOR2_init);
+	GPIOE_MOTOR2_init.GPIO_Pin = GPIO_Pin_7;
+	GPIO_Init(GPIOC, &GPIOE_MOTOR2_init);
 
-	GPIOE_MOTOR2_init.GPIO_Pin = GPIO_Pin_15;
-	GPIO_Init(GPIOE, &GPIOE_MOTOR2_init);
+	GPIOE_MOTOR2_init.GPIO_Pin = GPIO_Pin_8;
+	GPIO_Init(GPIOC, &GPIOE_MOTOR2_init);
 
 	/* 모터 정지 모드로 초기화 */
-	GPIO_ResetBits(GPIOE, GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_14 | GPIO_Pin_15);
+	GPIO_ResetBits(GPIOB, GPIO_Pin_1 | GPIO_Pin_2);
+	GPIO_ResetBits(GPIOC, GPIO_Pin_7 | GPIO_Pin_8);
 }
 
 void _GPIO_MOTORInit(void) {
@@ -860,37 +853,37 @@ void SendString(USART_TypeDef* USARTx, char* string) {
 void _command_forward(void) {
 	/* 모터드라이버1 제어 */
 	/* 왼쪽 바퀴 : in1(High)/in2(Low) */
-	GPIO_SetBits(GPIOE, GPIO_Pin_0);
-	GPIO_ResetBits(GPIOE, GPIO_Pin_1);
+	GPIO_SetBits(GPIOB, GPIO_Pin_5);
+	GPIO_ResetBits(GPIOB, GPIO_Pin_8);
 	/* 오른쪽 바퀴 : in3(High)/in4(Low) */
-	GPIO_SetBits(GPIOE, GPIO_Pin_2);
-	GPIO_ResetBits(GPIOE, GPIO_Pin_3);
+	GPIO_SetBits(GPIOC, GPIO_Pin_12);
+	GPIO_ResetBits(GPIOC, GPIO_Pin_13);
 
 	/* 모터드라이버2 제어 */
 	/* 왼쪽 바퀴 : in1(High)/in2(Low) */
-	GPIO_ResetBits(GPIOE, GPIO_Pin_4);
-	GPIO_SetBits(GPIOE, GPIO_Pin_5);
+	GPIO_ResetBits(GPIOB, GPIO_Pin_1);
+	GPIO_SetBits(GPIOB, GPIO_Pin_2);
 	/* 오른쪽 바퀴 : in3(High)/in4(Low) */
-	GPIO_ResetBits(GPIOE, GPIO_Pin_14);
-	GPIO_SetBits(GPIOE, GPIO_Pin_15);
+	GPIO_ResetBits(GPIOC, GPIO_Pin_7);
+	GPIO_SetBits(GPIOC, GPIO_Pin_8);
 }
 
 void _command_backward(void) {
 	/* 모터드라이버1 제어 */
 	/* 왼쪽 바퀴 : in1(Low)/in2(High) */
-	GPIO_ResetBits(GPIOE, GPIO_Pin_0);
-	GPIO_SetBits(GPIOE, GPIO_Pin_1);
+	GPIO_ResetBits(GPIOB, GPIO_Pin_5);
+	GPIO_SetBits(GPIOB, GPIO_Pin_8);
 	/* 오른쪽 바퀴 : in3(Low)/in4(High) */
-	GPIO_ResetBits(GPIOE, GPIO_Pin_2);
-	GPIO_SetBits(GPIOE, GPIO_Pin_3);
+	GPIO_ResetBits(GPIOC, GPIO_Pin_12);
+	GPIO_SetBits(GPIOC, GPIO_Pin_13);
 
 	/* 모터드라이버2 제어 */
 	/* 왼쪽 바퀴 : in1(Low)/in2(High) */
-	GPIO_SetBits(GPIOE, GPIO_Pin_4);
-	GPIO_ResetBits(GPIOE, GPIO_Pin_5);
+	GPIO_SetBits(GPIOB, GPIO_Pin_1);
+	GPIO_ResetBits(GPIOB, GPIO_Pin_2);
 	/* 오른쪽 바퀴 : in3(Low)/in4(High) */
-	GPIO_SetBits(GPIOE, GPIO_Pin_14);
-	GPIO_ResetBits(GPIOE, GPIO_Pin_15);
+	GPIO_SetBits(GPIOC, GPIO_Pin_7);
+	GPIO_ResetBits(GPIOC, GPIO_Pin_8);
 }
 
 void _command_left(void) {
@@ -898,19 +891,19 @@ void _command_left(void) {
 
 	/* 모터드라이버1 제어 */
 	/* 왼쪽 바퀴 : in1(Low)/in2(High) => 역방향 */
-	GPIO_ResetBits(GPIOE, GPIO_Pin_0);
-	GPIO_SetBits(GPIOE, GPIO_Pin_1);
+	GPIO_ResetBits(GPIOB, GPIO_Pin_5);
+	GPIO_SetBits(GPIOB, GPIO_Pin_8);
 	/* 오른쪽 바퀴 : in3(High)/in4(Low) => 정방향 */
-	GPIO_SetBits(GPIOE, GPIO_Pin_2);
-	GPIO_ResetBits(GPIOE, GPIO_Pin_3);
+	GPIO_SetBits(GPIOC, GPIO_Pin_12);
+	GPIO_ResetBits(GPIOC, GPIO_Pin_13);
 
 	/* 모터드라이버2 제어 */
 	/* 왼쪽 바퀴 : in1(Low)/in2(High) => 역방향 */
-	GPIO_ResetBits(GPIOE, GPIO_Pin_4);
-	GPIO_SetBits(GPIOE, GPIO_Pin_5);
+	GPIO_ResetBits(GPIOB, GPIO_Pin_1);
+	GPIO_SetBits(GPIOB, GPIO_Pin_2);
 	/* 오른쪽 바퀴 : in3(High)/in4(Low) => 정방향 */
-	GPIO_SetBits(GPIOE, GPIO_Pin_14);
-	GPIO_ResetBits(GPIOE, GPIO_Pin_15);
+	GPIO_SetBits(GPIOC, GPIO_Pin_7);
+	GPIO_ResetBits(GPIOC, GPIO_Pin_8);
 }
 
 void _command_right(void) {
@@ -918,31 +911,33 @@ void _command_right(void) {
 
 	/* 모터드라이버1 제어 */
 	/* 왼쪽 바퀴 : in1(High)/in2(Low) => 정방향 */
-	GPIO_SetBits(GPIOE, GPIO_Pin_0);
-	GPIO_ResetBits(GPIOE, GPIO_Pin_1);
+	GPIO_SetBits(GPIOB, GPIO_Pin_5);
+	GPIO_ResetBits(GPIOB, GPIO_Pin_8);
 	/* 오른쪽 바퀴 : in3(Low)/in4(High) => 역방향 */
-	GPIO_ResetBits(GPIOE, GPIO_Pin_2);
-	GPIO_SetBits(GPIOE, GPIO_Pin_3);
+	GPIO_ResetBits(GPIOC, GPIO_Pin_12);
+	GPIO_SetBits(GPIOC, GPIO_Pin_13);
 
 	/* 모터드라이버2 제어 */
 	/* 왼쪽 바퀴 : in1(High)/in2(Low) => 정방향 */
-	GPIO_SetBits(GPIOE, GPIO_Pin_4);
-	GPIO_ResetBits(GPIOE, GPIO_Pin_5);
+	GPIO_SetBits(GPIOB, GPIO_Pin_1);
+	GPIO_ResetBits(GPIOB, GPIO_Pin_2);
 	/* 오른쪽 바퀴 : in3(Low)/in4(High) => 역방향 */
-	GPIO_ResetBits(GPIOE, GPIO_Pin_14);
-	GPIO_SetBits(GPIOE, GPIO_Pin_15);
+	GPIO_ResetBits(GPIOC, GPIO_Pin_7);
+	GPIO_SetBits(GPIOC, GPIO_Pin_8);
 }
 
 void _command_stop(void) {
 	/* 모터드라이버1 제어 */
 	/* 왼쪽 바퀴 : in1(Low)/in2(Low) => 정지
 	 * 오른쪽 바퀴 : in3(Low)/in4(Low) => 정지 */
-	GPIO_ResetBits(GPIOE, GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3);
+	GPIO_ResetBits(GPIOB, GPIO_Pin_5 | GPIO_Pin_8);
+	GPIO_ResetBits(GPIOC, GPIO_Pin_12 | GPIO_Pin_13);
 
 	/* 모터드라이버2 제어 */
 	/* 왼쪽 바퀴 : in1(Low)/in2(Low) => 정지
 	 * 오른쪽 바퀴 : in3(Low)/in4(Low) => 정지 */
-	GPIO_ResetBits(GPIOE, GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_14 | GPIO_Pin_15);
+	GPIO_ResetBits(GPIOB, GPIO_Pin_1 | GPIO_Pin_2);
+	GPIO_ResetBits(GPIOC, GPIO_Pin_7 | GPIO_Pin_8);
 }
 
 void command_move(int select) {
@@ -1257,28 +1252,29 @@ void USART2_IRQHandler(void) {
 	if (USART_GetITStatus(USART2, USART_IT_RXNE) != RESET) {
 		recv_data = USART_ReceiveData(USART2);
 
+		GPIO_ResetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
+
 		if(recv_data == '!') {
 			if(strstr(command, "CLEAR") != NULL) {
 				GPIO_ResetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
 			}else if(strstr(command, "POWERON") != NULL) {
-				//GPIO_SetBits(GPIOD, GPIO_Pin_2);
 				UIOutline_Init();
 			}else if(strstr(command, "POWEROFF") != NULL) {
-				//GPIO_ResetBits(GPIOD, GPIO_Pin_2);
 				LCD_Clear(BLACK);
 			}else if(strstr(command, "FORWARD") != NULL) {
-				//GPIO_SetBits(GPIOD, GPIO_Pin_3);
+				stop_flag = false;
+				LCD_ShowString(180,100, "40 m/s", BLACK, WHITE);
 				command_move(1);
 			}else if(strstr(command, "BACKWARD") != NULL) {
-				//GPIO_SetBits(GPIOD, GPIO_Pin_4);
+				LCD_ShowString(180,100, "40 m/s", BLACK, WHITE);
 				command_move(2);
 			}else if(strstr(command, "LEFT") != NULL) {
-				//GPIO_SetBits(GPIOD, GPIO_Pin_4);
 				command_move(3);
 			}else if(strstr(command, "RIGHT") != NULL) {
-				//GPIO_SetBits(GPIOD, GPIO_Pin_7);
 				command_move(4);
 			}else if(strstr(command, "STOP") != NULL) {
+				stop_flag = true;
+				LCD_ShowString(180,100, "0 m/s", BLACK, WHITE);
 				GPIO_ResetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
 				command_move(0);
 			}
@@ -1352,14 +1348,22 @@ void TIM2_IRQHandler(void) {
 
 		if(speed_updown_timer_count % 2 == 0) {
 			if((int)last_angle_x >= 40) {
+				LCD_ShowString(180,100, "56 m/s", BLACK, WHITE);
 				speed_up_down(700);
 			}else if((int)last_angle_x >= 20) {
+				LCD_ShowString(180,100, "48 m/s", BLACK, WHITE);
 				speed_up_down(600);
 			}else if((int)last_angle_x <= (-1)*40) {
+				LCD_ShowString(180,100, "24 m/s", BLACK, WHITE);
 				speed_up_down(300);
 			}else if((int)last_angle_x <= (-1)*20) {
+				LCD_ShowString(180,100, "32 m/s", BLACK, WHITE);
 				speed_up_down(400);
 			}else {
+				if(stop_flag)
+					LCD_ShowString(180,100, "0 m/s", BLACK, WHITE);
+				else
+					LCD_ShowString(180,100, "40 m/s", BLACK, WHITE);
 				speed_up_down(500);
 			}
 			speed_updown_timer_count = speed_updown_timer_count % 2;
