@@ -43,8 +43,14 @@
  *    17) temperature : 온도 값
  *    18) humidity : 습도 값
  *    19) fingerprint_mode : 지문 센서 동작 모드(0:등록, 1:검증)
- *    20) lock_flag : 문열림잠금상태 */
-__IO uint32_t ADC_result_value_arr[5];
+ *    20) lock_flag : 문열림잠금상태
+ *    21) stop_flag : 차 정지 상태
+ *    22) current_velocity : 현재 속도
+ *    23) accident_list_index : 사고 로그 최대 인덱스는 0~4(5개)
+ *    24) accident_flag : 동일한 사고를 판단하기 위한 flag
+ *    25) power_flag : 자동차 ON/OFF 플래그 */
+
+__IO uint32_t ADC_result_value_arr[6];
 char command[100];
 int command_pos=0;
 
@@ -87,9 +93,35 @@ u8 humidity;
  * 0 : 모든 사용자 초기화
  * 1 : 지문대조모드 */
 int fingerprint_mode = -1;
+
+/* 차문 제어용 : 지문인식이 성공하면 lock_flag를 true로 세팅하고, 실패하면 false로 세팅
+ * true : 차문 열림 상태
+ * false : 차문 닫힘 상태 */
 bool lock_flag = false;
 
+/* 차 정지 상태 : 정지상태일 경우 속도를 0m/s로 표시하기 위함.
+ * true : 정지상태
+ * false : 움직임 상태 */
 bool stop_flag = true;
+
+/* 현재 속도 : 현재속도를 실시간으로 저장하여 사고가 났을 경우 이 값으로 로그를 찍음 */
+int current_velocity = 0;
+
+/* LCD에 사고 로그 창이 꽉 찰 경우 처음으로 돌아가기 위한 index(0~4) : 5개 출력 가능
+ * accident_flag : 압력센서가 감지한 후 동일한 사고를 로그에 찍지 않기 위해 사고가 난 경우
+ * 					accident_flag가 true true인상태에서 3000이하인 값이 나오면 accident 끝 */
+int accident_list_index = 0;
+bool accident_flag = false;
+
+/* power_flag : 자동차의 전원이 켜져 있는지 확인하는 flag
+ * true : 켜져있는 상태
+ * false : 꺼져있는 상태 */
+bool power_flag = false;
+
+/* light on/off모드를 자동모드(조도센서)로 할건지 수동모드(음성인식 & 블루투스 조작)
+ * true : 자동모드
+ * false : 수동모드 */
+bool light_auto_flag = true;
 
 void RCC_Configure(void);
 void USART_Configure(void);
@@ -135,6 +167,8 @@ void set_last_read_angle_data(unsigned long time, float x, float y, float z, flo
 void PrintAccelGryroRaw2Angle(int16_t accelgyro[6]);
 uint32_t GetTickCount(void);
 void UIOutline_Init(void);
+void PowerON(void);
+void PowerOFF(void);
 void Delay_ms(uint32_t ms);
 void UltraDistance_Init(void);
 uint16_t getDistance(void);
@@ -179,8 +213,8 @@ int main(void) {
 	UltraDistance_Init();
 
 	/* 메인 UI틀 초기화 */
-	LCD_Clear(WHITE);
-	UIOutline_Init();
+	PowerOFF();
+	//UIOutline_Init();
 	//LCD_ShowString(50, 130, "Accident Occur!!!", RED, WHITE);
 
 	/* 지문인식센서 초기화 : 실제로는 삭제해야할 부분 */
@@ -190,55 +224,56 @@ int main(void) {
 		delay();
 	}
 
-	/* 속도 초기화 */
-	LCD_ShowString(180,100, "0 m/s", BLACK, WHITE);
-
 	/* Debug용 : 나중에 삭제할 것! */
 	//GPIOResetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
 	while (1) {
 		/* 조도센서 값 LCD에 출력
 		 *    1) x > 3000 : 밤(어두움)
 		 *    2) else : 낮(밝음) */
-		LCD_ShowNum(190,225,ADC_result_value_arr[0],5,BLACK,WHITE);
-		if(ADC_result_value_arr[0] > 3000) {
-			GPIO_SetBits(GPIOD,GPIO_Pin_4);
-			GPIO_SetBits(GPIOD,GPIO_Pin_7);
-			GPIO_SetBits(GPIOC,GPIO_Pin_10);
-			GPIO_SetBits(GPIOC,GPIO_Pin_11);
-		}
-		else {
-			GPIO_ResetBits(GPIOD,GPIO_Pin_4);
-			GPIO_ResetBits(GPIOD,GPIO_Pin_7);
-			GPIO_ResetBits(GPIOC,GPIO_Pin_10);
-			GPIO_ResetBits(GPIOC,GPIO_Pin_11);
-		}
+		if(power_flag) {
+			LCD_ShowNum(190,225,ADC_result_value_arr[0],5,BLACK,WHITE);
+			if(light_auto_flag) {
+				if(ADC_result_value_arr[0] > 3000) {
+					GPIO_SetBits(GPIOD,GPIO_Pin_4);
+					GPIO_SetBits(GPIOD,GPIO_Pin_7);
+					GPIO_SetBits(GPIOC,GPIO_Pin_10);
+					GPIO_SetBits(GPIOC,GPIO_Pin_11);
+				}
+				else {
+					GPIO_ResetBits(GPIOD,GPIO_Pin_4);
+					GPIO_ResetBits(GPIOD,GPIO_Pin_7);
+					GPIO_ResetBits(GPIOC,GPIO_Pin_10);
+					GPIO_ResetBits(GPIOC,GPIO_Pin_11);
+				}
+			}
 
-		/* 빗물 감지 센서 값 LCD에 출력
-		 *    1) x < 3000 : 강한 빗물
-		 *    2) x < 3500 : 약한 빗물
-		 *    3) else : 빗물 x */
-		LCD_ShowNum(190,245,ADC_result_value_arr[1],5,BLACK,WHITE);
-		if(ADC_result_value_arr[1]<3000) {
-			rain_power_flag = 2;
-			//GPIO_ResetBits(GPIOD,GPIO_Pin_3);
-		}
-		else if(ADC_result_value_arr[1]<3500) {
-			rain_power_flag = 1;
-			//GPIO_ResetBits(GPIOD,GPIO_Pin_4);
-		}
-		else {
-			rain_power_flag = 0;
-			//GPIO_ResetBits(GPIOD,GPIO_Pin_7);
-		}
+			/* 빗물 감지 센서 값 LCD에 출력
+			 *    1) x < 3000 : 강한 빗물
+			 *    2) x < 3500 : 약한 빗물
+			 *    3) else : 빗물 x */
+			LCD_ShowNum(190,245,ADC_result_value_arr[1],5,BLACK,WHITE);
+			if(ADC_result_value_arr[1]<3000) {
+				rain_power_flag = 2;
+				//GPIO_ResetBits(GPIOD,GPIO_Pin_3);
+			}
+			else if(ADC_result_value_arr[1]<3500) {
+				rain_power_flag = 1;
+				//GPIO_ResetBits(GPIOD,GPIO_Pin_4);
+			}
+			else {
+				rain_power_flag = 0;
+				//GPIO_ResetBits(GPIOD,GPIO_Pin_7);
+			}
 
-		/* 인체 감지 센서 값 LCD에 출력
-		 *    1) x < 2000 : 사람 없음
-		 *    2) x > 2000 : 사람 감지 */
-		LCD_ShowNum(190,265,ADC_result_value_arr[2],5,BLACK,WHITE);
-		if(ADC_result_value_arr[2] > 2000) {
-			voice_command_enable = 1;
-		}else {
-			voice_command_enable = 0;
+			/* 인체 감지 센서 값 LCD에 출력
+			 *    1) x < 2000 : 사람 없음
+			 *    2) x > 2000 : 사람 감지 */
+			//LCD_ShowNum(190,265,ADC_result_value_arr[2],5,BLACK,WHITE);
+			if(ADC_result_value_arr[2] > 2000) {
+				voice_command_enable = 1;
+			}else {
+				voice_command_enable = 0;
+			}
 		}
 
 		/* MPU6050 6축 자이로 가속도 센서 사용
@@ -258,7 +293,8 @@ int main(void) {
 				/* Sensor로부터 데이터 받아오기 */
 				MPU6050_GetRawAccelGyro(AccelGyro);
 				/* 센서 raw데이터를 각도로 가공 및 출력 */
-				PrintAccelGryroRaw2Angle(AccelGyro);
+				if(power_flag)
+					PrintAccelGryroRaw2Angle(AccelGyro);
 
 				/* 경사각측정과 DC모터 속도 제어를 통해 차량 속도를 유지 */
 				/* 1초마다 TIM2 Interrupt Handler에서 속도 제어 */
@@ -266,29 +302,31 @@ int main(void) {
 			}
 		}
 
-		/* HC-SR04 초음파 거리센서 : 앞에 장애물이 있을 경우 멈춤. */
-		distance = getDistance();
-		LCD_ShowNum(190,285, distance, 5, BLACK, WHITE);
-		if(distance <= 2500)
-			command_move(0);
+		if(power_flag) {
+			/* HC-SR04 초음파 거리센서 : 앞에 장애물이 있을 경우 멈춤. */
+			distance = getDistance();
+			LCD_ShowNum(190,285, distance, 5, BLACK, WHITE);
+			if(distance <= 2500)
+				command_move(0);
 
-		/* 온습도센서
-		 *   1) 온도 측정 : float형의 temp_val_real에 저장
-		 *   2) 습도 측정 : float형의 humi_val_real에 저장 */
-		//temp_val_real = ((ADC_result_value_arr[3] / 6000) / 5.0) * 217.75 - 66.875;
-		//humi_val_real = ((ADC_result_value_arr[4] / 6000) / 5.0) * 125 -12.5;
-		temp_val_real = ADC_result_value_arr[3] / 100;
-		humi_val_real = ADC_result_value_arr[4] / 100;
-		LCD_ShowNum(180,40, (int)temp_val_real, 4, BLACK, WHITE);
-		LCD_ShowNum(180,70, (int)humi_val_real, 4, BLACK, WHITE);
+			/* 온습도센서
+			 *   1) 온도 측정 : float형의 temp_val_real에 저장
+			 *   2) 습도 측정 : float형의 humi_val_real에 저장 */
+			//temp_val_real = ((ADC_result_value_arr[3] / 6000) / 5.0) * 217.75 - 66.875;
+			//humi_val_real = ((ADC_result_value_arr[4] / 6000) / 5.0) * 125 -12.5;
+			temp_val_real = ADC_result_value_arr[3] / 100;
+			humi_val_real = ADC_result_value_arr[4] / 100;
+			LCD_ShowNum(180,40, (int)temp_val_real, 4, BLACK, WHITE);
+			LCD_ShowNum(180,70, (int)humi_val_real, 4, BLACK, WHITE);
 
-		if(temp_val_real > 20) {
-			GPIO_SetBits(GPIOC, GPIO_Pin_14);
-		}else if(temp_val_real < 23) {
-			GPIO_SetBits(GPIOC, GPIO_Pin_15);
-		}else {
-			GPIO_ResetBits(GPIOC, GPIO_Pin_14);
-			GPIO_ResetBits(GPIOC, GPIO_Pin_15);
+			if(temp_val_real > 29) {
+				GPIO_SetBits(GPIOC, GPIO_Pin_14);
+			}else if(temp_val_real < 27) {
+				GPIO_SetBits(GPIOC, GPIO_Pin_15);
+			}else {
+				GPIO_ResetBits(GPIOC, GPIO_Pin_14);
+				GPIO_ResetBits(GPIOC, GPIO_Pin_15);
+			}
 		}
 
 		/* 지문인식센서 */
@@ -340,6 +378,36 @@ int main(void) {
 			door_control(lock_flag);
 			fingerprint_mode = -1;
 			break;
+		}
+
+		if(power_flag) {
+			/* 압력센서
+			 *    1) 압력센서 사고가 났을 경우 속도와 충격량을 로그로 찍음.
+			 *    2) 로그의 최대치는 5개임. 그 이후는 flush */
+			LCD_ShowNum(190,265,ADC_result_value_arr[5],5,BLACK,WHITE);
+			if(ADC_result_value_arr[5] > 3000) {
+				if(!accident_flag) {
+					accident_flag = true;
+					if(accident_list_index > 4) {
+						UIOutline_Init();
+						accident_list_index = 0;
+					}
+					LCD_ShowString(10, 205+(20*accident_list_index),"Crash Log - ", RED, WHITE);
+					LCD_ShowNum(100,205+(20*accident_list_index),current_velocity,2,BLACK,WHITE);
+					LCD_ShowString(120, 205+(20*accident_list_index), ",", BLACK, WHITE);
+					LCD_ShowNum(130, 205+(20*accident_list_index), ADC_result_value_arr[5], 4, BLACK, WHITE);
+
+					accident_list_index++;
+				}
+			}else {
+				accident_flag = false;
+			}
+		}
+		/* 시동 꺼진 상태에서 선풍기, 히터 끔. */
+		if(!power_flag) {
+			PowerOFF();
+			GPIO_ResetBits(GPIOC, GPIO_Pin_14);
+			GPIO_ResetBits(GPIOC, GPIO_Pin_15);
 		}
 	}
 }
@@ -548,6 +616,9 @@ void _GPIO_ADCInit(void){
 	GPIOC_ADC_init.GPIO_Mode = GPIO_Mode_AIN;
 	GPIOC_ADC_init.GPIO_Pin = GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_5;
 	GPIO_Init(GPIOC, &GPIOC_ADC_init);
+
+	GPIOC_ADC_init.GPIO_Pin = GPIO_Pin_5;
+	GPIO_Init(GPIOA, &GPIOC_ADC_init);
 }
 
 void _GPIO_TIM3Ch3Ch2Ch1Init(void) {
@@ -563,7 +634,7 @@ void _GPIO_TIM3Ch3Ch2Ch1Init(void) {
 	GPIOAB_TIM3Ch3Ch2Ch1_init.GPIO_Pin = GPIO_Pin_0;
 	GPIO_Init(GPIOB, &GPIOAB_TIM3Ch3Ch2Ch1_init);
 
-	/* 와이퍼 각도 제어 : TIM3_Channel3(PB0) GPIO 초기화 */
+	/* 와이퍼 각도 제어 : TIM3_Channel2(PA7) GPIO 초기화 */
 	GPIOAB_TIM3Ch3Ch2Ch1_init.GPIO_Pin = GPIO_Pin_7;
 	GPIO_Init(GPIOA, &GPIOAB_TIM3Ch3Ch2Ch1_init);
 
@@ -638,12 +709,13 @@ void ADC_Configure(void){
 	ADC_InitStructure.ADC_ContinuousConvMode=ENABLE;
 	ADC_InitStructure.ADC_ExternalTrigConv=ADC_ExternalTrigConv_None;
 	ADC_InitStructure.ADC_DataAlign=ADC_DataAlign_Right;
-	ADC_InitStructure.ADC_NbrOfChannel=5;
+	ADC_InitStructure.ADC_NbrOfChannel=6;
 	ADC_RegularChannelConfig(ADC1,ADC_Channel_11,1,ADC_SampleTime_239Cycles5);
 	ADC_RegularChannelConfig(ADC1,ADC_Channel_12,2,ADC_SampleTime_239Cycles5);
 	ADC_RegularChannelConfig(ADC1,ADC_Channel_13,3,ADC_SampleTime_239Cycles5);
 	ADC_RegularChannelConfig(ADC1,ADC_Channel_14,4,ADC_SampleTime_239Cycles5);
 	ADC_RegularChannelConfig(ADC1,ADC_Channel_15,5,ADC_SampleTime_239Cycles5);
+	ADC_RegularChannelConfig(ADC1,ADC_Channel_5,6,ADC_SampleTime_239Cycles5);
 	ADC_Init(ADC1,&ADC_InitStructure);
 
 	ADC_DMACmd(ADC1,ENABLE);
@@ -767,7 +839,7 @@ void DMA_Configure(void){
 	DMA_init.DMA_PeripheralBaseAddr=(uint32_t)&ADC1->DR;
 	DMA_init.DMA_MemoryBaseAddr=(uint32_t)ADC_result_value_arr;
 	DMA_init.DMA_DIR=DMA_DIR_PeripheralSRC;
-	DMA_init.DMA_BufferSize=5;
+	DMA_init.DMA_BufferSize=6;
 	DMA_init.DMA_PeripheralInc=DMA_PeripheralInc_Disable;
 	DMA_init.DMA_MemoryInc=DMA_MemoryInc_Enable;
 	DMA_init.DMA_PeripheralDataSize=DMA_PeripheralDataSize_Word;
@@ -1148,6 +1220,16 @@ void UIOutline_Init(void) {
 	LCD_DrawRectangle(180, 200, 235, 315);
 }
 
+void PowerON(void) {
+	power_flag = true;
+	UIOutline_Init();
+}
+
+void PowerOFF(void) {
+	power_flag = false;
+	LCD_Clear(BLACK);
+}
+
 void Delay_ms(uint32_t ms) {
 	volatile uint32_t nCount;
 	RCC_ClocksTypeDef RCC_Clocks;
@@ -1258,25 +1340,53 @@ void USART2_IRQHandler(void) {
 			if(strstr(command, "CLEAR") != NULL) {
 				GPIO_ResetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
 			}else if(strstr(command, "POWERON") != NULL) {
-				UIOutline_Init();
+				power_flag = true;
+				PowerON();
 			}else if(strstr(command, "POWEROFF") != NULL) {
-				LCD_Clear(BLACK);
+				power_flag = false;
+				PowerOFF();
 			}else if(strstr(command, "FORWARD") != NULL) {
-				stop_flag = false;
-				LCD_ShowString(180,100, "40 m/s", BLACK, WHITE);
-				command_move(1);
+				if(power_flag) {
+					stop_flag = false;
+					current_velocity = 40;
+					LCD_ShowNum(180, 100, current_velocity, 2, BLACK, WHITE);
+					LCD_ShowString(200, 100, "m/s", BLACK, WHITE);
+					command_move(1);
+				}
 			}else if(strstr(command, "BACKWARD") != NULL) {
-				LCD_ShowString(180,100, "40 m/s", BLACK, WHITE);
-				command_move(2);
+				if(power_flag) {
+					current_velocity = 40;
+					LCD_ShowNum(180, 100, current_velocity, 2, BLACK, WHITE);
+					LCD_ShowString(200, 100, "m/s", BLACK, WHITE);
+					command_move(2);
+				}
 			}else if(strstr(command, "LEFT") != NULL) {
-				command_move(3);
+				if(power_flag)
+					command_move(3);
 			}else if(strstr(command, "RIGHT") != NULL) {
-				command_move(4);
+				if(power_flag)
+					command_move(4);
 			}else if(strstr(command, "STOP") != NULL) {
-				stop_flag = true;
-				LCD_ShowString(180,100, "0 m/s", BLACK, WHITE);
-				GPIO_ResetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
-				command_move(0);
+				if(power_flag) {
+					stop_flag = true;
+					current_velocity = 0;
+					LCD_ShowNum(180, 100, current_velocity, 2, BLACK, WHITE);
+					LCD_ShowString(200, 100, "m/s", BLACK, WHITE);
+					GPIO_ResetBits(GPIOD, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_7);
+					command_move(0);
+				}
+			}else if(strstr(command, "LIGHTON") != NULL) {
+				if(power_flag) {
+					light_auto_flag = false;
+					GPIO_SetBits(GPIOC,GPIO_Pin_10);
+					GPIO_SetBits(GPIOC,GPIO_Pin_11);
+				}
+			}else if(strstr(command, "LIGHTOFF") != NULL) {
+				if(power_flag) {
+					light_auto_flag = true;
+					GPIO_ResetBits(GPIOC,GPIO_Pin_10);
+					GPIO_ResetBits(GPIOC,GPIO_Pin_11);
+				}
 			}
 			command_pos = 0;
 			memset(command, 0x00, 100);
@@ -1302,6 +1412,41 @@ void USART3_IRQHandler(void) {
 			if(voice_command_enable) {
 				UIOutline_Init();
 				LCD_ShowString(50, 130, voiceBuffer[voice_command-1], BLACK, WHITE);
+				/* Power ON : "Turn on the TV" */
+				if(voice_command-1 == 8) {
+					PowerON();
+				/* Power OFF : "Turn off the TV" */
+				}else if(voice_command-1 == 9) {
+					PowerOFF();
+				/* Increase temperature */
+				}else if(voice_command-1 == 10) {
+					GPIO_ResetBits(GPIOC, GPIO_Pin_14);
+					GPIO_SetBits(GPIOC, GPIO_Pin_15);
+				/* Decrease temperature */
+				}else if(voice_command-1 == 11) {
+					GPIO_SetBits(GPIOC, GPIO_Pin_14);
+					GPIO_ResetBits(GPIOC, GPIO_Pin_15);
+				/* Open the door */
+				}else if(voice_command-1 == 13) {
+					door_control(true);
+				/* Close the door */
+				}else if(voice_command-1 == 14) {
+					door_control(false);
+				/* Temperature Control Disable : "Stop" */
+				}else if(voice_command-1 == 17) {
+					GPIO_ResetBits(GPIOC, GPIO_Pin_14);
+					GPIO_ResetBits(GPIOC, GPIO_Pin_15);
+				/* Turn on the light */
+				}else if(voice_command-1 == 0) {
+					light_auto_flag = false;
+					GPIO_SetBits(GPIOC,GPIO_Pin_10);
+					GPIO_SetBits(GPIOC,GPIO_Pin_11);
+				/* Turn off the light */
+				}else if(voice_command-1 == 1) {
+					light_auto_flag = true;
+					GPIO_ResetBits(GPIOC,GPIO_Pin_10);
+					GPIO_ResetBits(GPIOC,GPIO_Pin_11);
+				}
 			}else {
 				UIOutline_Init();
 				LCD_ShowString(50, 130, "Voice Command Disabled!", BLACK, WHITE);
@@ -1347,24 +1492,39 @@ void TIM2_IRQHandler(void) {
 		}
 
 		if(speed_updown_timer_count % 2 == 0) {
-			if((int)last_angle_x >= 40) {
-				LCD_ShowString(180,100, "56 m/s", BLACK, WHITE);
-				speed_up_down(700);
-			}else if((int)last_angle_x >= 20) {
-				LCD_ShowString(180,100, "48 m/s", BLACK, WHITE);
-				speed_up_down(600);
-			}else if((int)last_angle_x <= (-1)*40) {
-				LCD_ShowString(180,100, "24 m/s", BLACK, WHITE);
-				speed_up_down(300);
-			}else if((int)last_angle_x <= (-1)*20) {
-				LCD_ShowString(180,100, "32 m/s", BLACK, WHITE);
-				speed_up_down(400);
-			}else {
-				if(stop_flag)
-					LCD_ShowString(180,100, "0 m/s", BLACK, WHITE);
-				else
-					LCD_ShowString(180,100, "40 m/s", BLACK, WHITE);
-				speed_up_down(500);
+			if(power_flag) {
+				if(!stop_flag) {
+					if((int)last_angle_x >= 40) {
+						current_velocity = 56;
+						LCD_ShowNum(180, 100, current_velocity, 2, BLACK, WHITE);
+						LCD_ShowString(200, 100, "m/s", BLACK, WHITE);
+						speed_up_down(700);
+					}else if((int)last_angle_x >= 20) {
+						current_velocity = 48;
+						LCD_ShowNum(180, 100, current_velocity, 2, BLACK, WHITE);
+						LCD_ShowString(200, 100, "m/s", BLACK, WHITE);
+						speed_up_down(600);
+					}else if((int)last_angle_x <= (-1)*40) {
+						current_velocity = 24;
+						LCD_ShowNum(180, 100, current_velocity, 2, BLACK, WHITE);
+						LCD_ShowString(200, 100, "m/s", BLACK, WHITE);
+						speed_up_down(300);
+					}else if((int)last_angle_x <= (-1)*20) {
+						current_velocity = 32;
+						LCD_ShowNum(180, 100, current_velocity, 2, BLACK, WHITE);
+						LCD_ShowString(200, 100, "m/s", BLACK, WHITE);
+						speed_up_down(400);
+					}else {
+						current_velocity = 40;
+						LCD_ShowNum(180, 100, current_velocity, 2, BLACK, WHITE);
+						LCD_ShowString(200, 100, "m/s", BLACK, WHITE);
+						speed_up_down(500);
+					}
+				}else {
+					current_velocity = 0;
+					LCD_ShowNum(180, 100, current_velocity, 2, BLACK, WHITE);
+					LCD_ShowString(200, 100, "m/s", BLACK, WHITE);
+				}
 			}
 			speed_updown_timer_count = speed_updown_timer_count % 2;
 		}
